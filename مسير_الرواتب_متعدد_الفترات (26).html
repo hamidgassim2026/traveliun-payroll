@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light">
+<style>:root{color-scheme:light only;}</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نظام رواتب ترافليون - متعدد الفترات</title>
+<style>
+  :root {
+    --navy:#4F46E5; --teal:#10B981; --sand:#F6F7FB; --red:#DC2626; --sandline:#E4E7EC; --green:#059669; --amber:#D97706; --blue:#7C3AED;
+    --sidebar-w:230px; --topbar-h:60px; --radius:10px;
+    --ink-1:#1F2430; --ink-2:#6B7280; --ink-3:#9CA3AF;
+  }
+  * { box-sizing: border-box; }
+  html, body { height:100%; }
+  html { background-color:#ffffff; color:#1F2430; }
+  html { scroll-behavior:smooth; }
+  body { font-family:"Tahoma","Segoe UI",Arial,sans-serif; background:var(--sand); color:var(--ink-1); margin:0; font-size:14px; }
+  :focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
+  svg.icon { width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+
+  /* ---- App shell layout: sidebar + topbar + content ---- */
+  .app-layout { display:flex; min-height:100vh; }
+  .sidebar { width:230px; min-width:230px; background-color:#ffffff; color:#1F2430; display:flex; flex-direction:column; min-height:100vh; z-index:30; border-left:1px solid #E4E7EC; }
+  .sidebar-brand { padding:20px 18px 14px; border-bottom:1px solid #E4E7EC; }
+  .sidebar-brand .brand-name { font-weight:700; font-size:15px; color:#111827; }
+  .sidebar-brand .brand-sub { font-size:10.5px; color:#6B7280; margin-top:3px; }
+  .sidebar-nav { flex:1; overflow-y:auto; padding:10px 10px; display:flex; flex-direction:column; gap:2px; }
+  .sidebar-nav button { display:flex; align-items:center; gap:10px; padding:9px 10px; border:none; background:none; color:#374151; border-radius:8px; cursor:pointer; font-family:inherit; font-size:13px; font-weight:600; text-align:right; width:100%; transition:background .12s, color .12s; }
+  .sidebar-nav button svg.icon { padding:3px; border-radius:6px; box-sizing:content-box; transition:background .12s; color:#6B7280; }
+  .sidebar-nav button:hover { background:#F3F4F6; color:#111827; }
+  .sidebar-nav button.active { background:#EEF2FF; color:var(--navy); font-weight:700; }
+  .sidebar-nav button.active svg.icon { background:var(--navy); color:#ffffff; }
+  .sidebar-foot { padding:12px; border-top:1px solid #E4E7EC; }
+  .sidebar-role { font-size:11.5px; background:#F3F4F6; color:#374151; border-radius:8px; padding:8px 10px; margin-bottom:8px; line-height:1.5; }
+  .sidebar-role .name { font-weight:700; display:block; color:#111827; }
+  .sidebar-role .role { color:#6B7280; }
+
+  /* ---- استجابة الشاشات الصغيرة: القائمة الجانبية تصبح شريطًا علويًا أفقيًا قابلًا للتمرير ---- */
+  @media (max-width: 768px) {
+    .app-layout { flex-direction:column; }
+    .sidebar { width:100%; min-width:0; min-height:auto; flex-direction:row; align-items:center; }
+    .sidebar-brand { border-bottom:none; border-left:1px solid #E4E7EC; padding:12px 14px; flex-shrink:0; }
+    .sidebar-brand .brand-sub { display:none; }
+    .sidebar-nav { flex-direction:row; overflow-x:auto; overflow-y:visible; padding:8px; gap:4px; }
+    .sidebar-nav button { flex-direction:column; gap:4px; padding:8px 10px; font-size:10.5px; white-space:nowrap; }
+    .sidebar-foot { border-top:none; border-right:1px solid #E4E7EC; flex-shrink:0; display:flex; align-items:center; padding:8px 12px; }
+    .sidebar-role { margin-bottom:0; margin-left:8px; white-space:nowrap; }
+    main#main { padding:16px; }
+    .topbar { padding:0 14px; flex-wrap:wrap; height:auto; min-height:var(--topbar-h); padding-top:8px; padding-bottom:8px; }
+  }
+
+  .app-main { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .topbar { height:var(--topbar-h); background:#fff; border-bottom:1px solid var(--sandline); display:flex; align-items:center; justify-content:space-between; padding:0 22px; gap:14px; position:sticky; top:0; z-index:20; }
+  .topbar-left { display:flex; align-items:center; gap:10px; font-size:13px; flex-wrap:wrap; }
+  .topbar-left select { padding:6px 10px; border-radius:8px; border:1px solid var(--sandline); font-family:inherit; font-size:13px; }
+  .topbar-right { display:flex; align-items:center; gap:8px; position:relative; }
+  main#main { padding:22px 26px 60px; }
+
+  /* ---- Button hierarchy ---- */
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer; border:1px solid transparent; white-space:nowrap; transition:filter .1s, background .1s; }
+  .btn:hover { filter:brightness(0.95); }
+  .btn-primary { background:var(--teal); color:#fff; }
+  .btn-secondary { background:#fff; color:var(--navy); border-color:var(--sandline); }
+  .btn-ghost { background:transparent; color:var(--ink-2); border-color:transparent; }
+  .btn-ghost:hover { background:#F3F4F6; }
+  .btn-danger-ghost { background:transparent; color:var(--red); border-color:transparent; }
+  .btn:disabled { opacity:.4; cursor:not-allowed; filter:none; }
+
+  .menu-wrap { position:relative; }
+  .menu-dropdown { position:absolute; left:0; top:calc(100% + 8px); background:#fff; border:1px solid var(--sandline); border-radius:12px; box-shadow:0 12px 32px rgba(17,17,40,.14); min-width:270px; max-width:90vw; padding:8px; display:none; z-index:40; }
+  .menu-dropdown.open { display:block; }
+  .menu-dropdown .menu-item { display:flex; align-items:center; gap:11px; width:100%; text-align:right; padding:10px 12px; border:none; background:none; border-radius:8px; cursor:pointer; font-family:inherit; font-size:13px; color:var(--ink-1); }
+  .menu-dropdown .menu-item svg.icon { color:var(--ink-2); }
+  .menu-dropdown .menu-item:hover { background:var(--sand); }
+  .menu-dropdown .menu-item:hover svg.icon { color:var(--navy); }
+  .menu-dropdown .menu-sep { height:1px; background:var(--sandline); margin:6px 4px; }
+  .menu-dropdown .menu-label { font-size:10.5px; font-weight:700; letter-spacing:.02em; color:var(--ink-3); padding:8px 12px 4px; text-transform:uppercase; }
+
+  .view-toggle { display:flex; background:#F3F4F6; border-radius:8px; padding:3px; gap:2px; }
+  .view-toggle button { padding:6px 12px; border:none; background:none; border-radius:6px; font-family:inherit; font-size:12px; cursor:pointer; color:var(--ink-2); }
+  .view-toggle button.active { background:#fff; color:var(--navy); font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,.1); }
+  td.col-hidden, th.col-hidden { display:none; }
+
+  .unsaved-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#F59E0B; margin-inline-start:4px; }
+  main { padding:24px 30px 60px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-bottom:22px; }
+  .card { background:#fff; border-radius:12px; padding:16px; border-right:4px solid var(--teal); transition:box-shadow .15s, transform .15s; }
+  .card:hover { box-shadow:0 6px 18px rgba(15,61,46,.12); transform:translateY(-1px); }
+  .card.mini { padding:14px 16px; }
+  .dash-icon { font-size:18px; margin-bottom:6px; line-height:1; }
+  .card.warncard { border-right-color:var(--red); }
+  .card .label { font-size:12px; color:#888; margin-bottom:6px; }
+  .card .value { font-size:21px; font-weight:700; }
+  .dash-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; margin-bottom:18px; }
+  .panel-title { font-weight:700; margin-bottom:12px; font-size:14px; }
+  .bar-row { display:grid; grid-template-columns:110px 1fr 34px; align-items:center; gap:10px; margin-bottom:8px; font-size:12.5px; }
+  .bar-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#444; }
+  .bar-track { background:#F3F4F6; border-radius:6px; height:10px; overflow:hidden; }
+  .bar-fill { background:var(--teal); height:100%; border-radius:6px; transition:width .25s; }
+  .bar-fill.alt { background:var(--blue); }
+  .bar-value { text-align:left; font-weight:700; color:var(--navy); }
+  .mini-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #F3F4F6; font-size:12.5px; }
+  .mini-row:last-child { border-bottom:none; }
+  .mini-muted { color:#888; }
+  .panel { background:#fff; border-radius:12px; padding:16px; margin-bottom:18px; }
+  .rate-row { display:flex; gap:22px; flex-wrap:wrap; align-items:center; font-size:13px; }
+  input[type=search] { width:240px; padding:7px 10px; border:1px solid #ccc; border-radius:8px; font-family:inherit; }
+  table.tbl { width:100%; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden; font-size:13px; }
+  .tbl th { background:var(--navy); color:#fff; padding:9px 8px; text-align:right; cursor:pointer; user-select:none; white-space:nowrap; }
+  .tbl th:hover { background:var(--teal); }
+  .tbl td { padding:6px 8px; text-align:right; border-bottom:1px solid #eee; }
+  .tbl tbody tr:nth-child(even) { background:#F9FAFB; }
+  .tbl tbody tr.warn { background:#FEE2E2; }
+  .tbl tbody tr.edited { outline:2px solid var(--teal); outline-offset:-2px; }
+  .tbl tfoot td { background:var(--sand); font-weight:700; border-top:2px solid var(--navy); }
+  .cell-input { width:100%; height:30px; padding:4px 6px; border:1px solid #ddd; border-radius:6px; font-family:inherit; font-size:13px; background:#FAFAFB; box-sizing:border-box; -webkit-appearance:none; appearance:none; }
+  select.cell-input { background-image:url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 20 20%27 fill=%27%235f5e5a%27><path d=%27M5.5 7l4.5 5 4.5-5z%27/></svg>"); background-repeat:no-repeat; background-position:left 8px center; background-size:14px; padding-left:26px; }
+  .cell-input:focus { border-color:var(--teal); outline:none; }
+  .cell-input.negval { border-color:var(--red); background:#FEF2F2; }
+  .badge { padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; }
+  .badge-ok { background:#D1FAE5; color:var(--green); }
+  .badge-warn { background:#FEE2E2; color:var(--red); }
+  .badge-edited { background:#EDE9FE; color:var(--blue); margin-right:6px; }
+  .note { font-size:12px; color:#666; margin-top:10px; }
+  .banner { background:#FEF3C7; border:1px solid #FCD34D; border-radius:10px; padding:12px 14px; font-size:13px; margin-bottom:16px; }
+  .banner.info { background:#EDE9FE; border-color:#C7D2FE; }
+  .acc { background:#fff; border-radius:10px; margin-bottom:8px; overflow:hidden; }
+  .acc-head { padding:12px 14px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:13px; }
+  .acc-body { padding:0 14px 14px; font-size:12.5px; display:none; }
+  .acc-body.open { display:block; }
+  .flag { color:var(--red); margin-bottom:4px; }
+  .field-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:center; }
+  .field-grid label { font-size:12px; color:#666; display:block; margin-bottom:2px; }
+  .toolbar { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+  .small-btn { padding:6px 12px; border:1px solid var(--navy); background:#fff; color:var(--navy); border-radius:8px; cursor:pointer; font-size:12px; font-family:inherit; }
+  .small-btn:hover { background:var(--navy); color:#fff; }
+  .small-btn:disabled { opacity:.4; cursor:not-allowed; }
+  #toast-wrap { position:fixed; bottom:20px; right:20px; z-index:999; display:flex; flex-direction:column; gap:8px; max-width:90vw; }
+  .toast { background:var(--navy); color:#fff; padding:10px 16px; border-radius:8px; font-size:13px; box-shadow:0 4px 12px rgba(0,0,0,.2); animation:fadein .2s; max-width:320px; }
+  @keyframes fadein { from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)} }
+  kbd { background:#eee; border-radius:4px; padding:1px 5px; font-size:11px; }
+  #login-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, var(--navy), #4338CA 60%, var(--teal)); padding:20px; }
+  .login-card { background:#fff; border-radius:16px; padding:32px; width:100%; max-width:420px; box-shadow:0 20px 50px rgba(0,0,0,.25); }
+  .login-card h1 { margin:0 0 4px; font-size:19px; color:var(--navy); text-align:center; }
+  .login-sub { text-align:center; color:#777; font-size:12.5px; margin:0 0 20px; }
+  .login-label { display:block; font-size:12px; color:#555; margin:12px 0 5px; }
+  .login-card select, .login-card input { width:100%; padding:9px 12px; border:1px solid #ddd; border-radius:8px; font-family:inherit; font-size:13px; }
+  #login-btn { width:100%; margin-top:18px; padding:11px; background:var(--navy); color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer; font-family:inherit; font-size:14px; }
+  #login-btn:hover { background:var(--teal); }
+  #login-error { color:var(--red); font-size:12.5px; margin-top:10px; text-align:center; min-height:16px; }
+  .login-note { margin-top:18px; font-size:11px; color:#888; line-height:1.7; background:#F9FAFB; border:1px solid #eee; border-radius:8px; padding:10px 12px; }
+  #server-status { font-size:12px; text-align:center; padding:8px 10px; border-radius:8px; margin-bottom:16px; }
+  #server-status.on { background:#D1FAE5; color:#059669; }
+  #server-status.off { background:#EDE9FE; color:#7C3AED; }
+  .readonly-banner { background:#EDE9FE; border:1px solid #FCD34D; border-radius:10px; padding:10px 14px; font-size:12.5px; margin-bottom:16px; }
+  #pdf-print-area { display:none; }
+  @media print {
+    body.printing-pdf > *:not(#pdf-print-area) { display:none !important; }
+    body.printing-pdf #pdf-print-area { display:block !important; }
+    body.printing-pdf { background:#fff; margin:0; }
+    @page { size:A4 landscape; margin:12mm; }
+  }
+  .pdf-page { font-family:"Tahoma","Segoe UI",Arial,sans-serif; color:#1a1a1a; direction:rtl; page-break-after:always; }
+  .pdf-page:last-child { page-break-after:auto; }
+  .pdf-header { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:3px solid #4F46E5; padding-bottom:10px; margin-bottom:14px; }
+  .pdf-company { font-size:20px; font-weight:700; color:#4F46E5; }
+  .pdf-sub { font-size:13px; color:#555; margin-top:2px; }
+  .pdf-meta { font-size:11px; color:#555; text-align:left; line-height:1.6; }
+  .pdf-table { width:100%; border-collapse:collapse; font-size:10.5px; margin-bottom:16px; }
+  .pdf-table th { background:#4F46E5; color:#fff; padding:6px 5px; text-align:right; font-weight:700; border:1px solid #4F46E5; }
+  .pdf-table td { padding:5px; border:1px solid #ddd; text-align:right; }
+  .pdf-table tbody tr:nth-child(even) { background:#F9FAFB; }
+  .pdf-table tr.pdf-warn { background:#FEE2E2 !important; }
+  .pdf-table .pdf-name { font-weight:700; }
+  .pdf-table .pdf-net { font-weight:700; color:#4F46E5; }
+  .pdf-summary { display:flex; gap:26px; border:1px solid #ddd; border-radius:6px; padding:10px 16px; margin-bottom:26px; font-size:12px; background:#F3F4F6; }
+  .pdf-summary div { display:flex; flex-direction:column; gap:3px; }
+  .pdf-summary span { color:#777; font-size:10.5px; }
+  .pdf-summary strong { font-size:14px; color:#4F46E5; }
+  .pdf-sign { display:flex; justify-content:space-between; gap:40px; margin-top:10px; }
+  .pdf-sign > div { flex:1; text-align:center; font-size:11px; color:#555; }
+  .pdf-line { border-bottom:1px solid #999; height:34px; margin-top:6px; }
+  .pdf-footer { margin-top:20px; text-align:center; font-size:9.5px; color:#999; border-top:1px solid #eee; padding-top:8px; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <img src="data:image/png;base64,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" alt="ترافليون" style="width:100%;max-width:220px;display:block;margin:0 auto 18px">
+    <div id="server-status"></div>
+
+    <div id="cloud-login-block" style="display:none">
+      <p class="login-sub">تسجيل الدخول عبر الخادم السحابي (بريد إلكتروني حقيقي وكلمة مرور حقيقية)</p>
+      <label class="login-label">البريد الإلكتروني</label>
+      <input type="email" id="cloud-email" placeholder="name@company.com">
+      <label class="login-label">كلمة المرور</label>
+      <input type="password" id="cloud-password" placeholder="كلمة المرور">
+      <button id="cloud-login-btn">دخول عبر الخادم</button>
+      <div id="cloud-login-error"></div>
+      <div class="login-note">✅ هذا تسجيل دخول حقيقي عبر Supabase — كلمة المرور مشفّرة ولا تُحفظ أو تظهر في كود الصفحة. الدور يُحدَّد من قاعدة البيانات وليس من اختيارك.</div>
+    </div>
+
+    <div id="local-login-block">
+      <p class="login-sub">أدخل اسم المستخدم وكلمة المرور الخاصين بك (الوضع المحلي التجريبي)</p>
+      <label class="login-label">اسم المستخدم</label>
+      <input type="text" id="login-username" placeholder="مثال: hr1" autocomplete="off">
+      <label class="login-label">كلمة المرور</label>
+      <input type="password" id="login-password" placeholder="أدخل كلمة المرور">
+      <button id="login-btn">دخول (محلي)</button>
+      <div id="login-error"></div>
+      <div class="login-note">
+        ⚠️ <strong>هذه شاشة دخول تجريبية لأغراض العرض فقط</strong> — تعمل داخل متصفحك دون أي خادم، وبيانات الحسابات مكتوبة داخل الكود ويمكن لأي شخص يفتح "عرض المصدر" رؤيتها. هذا يُحاكي حسابات المستخدمين الفردية لأغراض العرض والتجربة فقط، وليس حماية فعلية. تواصل مع مدير النظام للحصول على بيانات الدخول الخاصة بك.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="app-shell" style="display:none">
+<div class="app-layout">
+
+  <aside class="sidebar" style="background-color:#ffffff;color:#1F2430">
+    <div class="sidebar-brand">
+      <img src="data:image/png;base64,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" alt="ترافليون" style="width:100%;max-width:150px;display:block;margin-bottom:6px">
+      <div class="brand-sub">نظام الرواتب — نسخة تفاعلية متعددة الفترات</div>
+    </div>
+    <nav class="sidebar-nav" id="nav"></nav>
+    <div class="sidebar-foot">
+      <div class="sidebar-role" id="role-badge"></div>
+      <button class="btn btn-ghost" id="logout-btn" style="width:100%;justify-content:center;color:#DC2626">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        تسجيل الخروج
+      </button>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <span style="color:var(--ink-2);font-size:12.5px">الفترة:</span>
+        <select id="period-select"></select>
+        <span id="unsaved-indicator"></span>
+        <span id="idb-indicator" style="font-size:11.5px"></span>
+      </div>
+      <div class="topbar-right">
+        <div class="menu-wrap">
+          <button class="btn btn-secondary" id="actions-menu-btn">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            الإجراءات
+          </button>
+          <div class="menu-dropdown" id="actions-menu">
+            <div class="menu-label">تصدير البيانات</div>
+            <button type="button" class="menu-item" id="export-xlsx-btn"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg><span>Excel (.xlsx)</span></button>
+            <button type="button" class="menu-item" id="export-csv-btn"><svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>CSV لجوجل شيتس</span></button>
+            <button type="button" class="menu-item" id="export-pdf-btn"><svg class="icon" viewBox="0 0 24 24"><path d="M6 9V2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2"/><path d="M2 13h4a2 2 0 0 1 0 4H3v3"/><path d="M9 20v-7h1.5a1.75 1.75 0 0 1 0 3.5H9"/><path d="M14 20v-7h3"/><path d="M14 16.5h2"/></svg><span>ملف PDF للطباعة</span></button>
+            <div class="menu-sep"></div>
+            <div class="menu-label">كشف استلام ورقي</div>
+            <button type="button" class="menu-item" id="export-signature-sheet-btn"><svg class="icon" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg><span>كشف توقيع يدوي (PDF)</span></button>
+            <div class="menu-sep"></div>
+            <div class="menu-label">تقارير الأقسام</div>
+            <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;font-size:12px;color:var(--ink-2);cursor:pointer">
+              <input type="checkbox" id="export-all-periods-toggle">
+              تضمين كل الفترات المحفوظة في هذه الجلسة (بدل الفترة الحالية فقط)
+            </label>
+            <button type="button" class="menu-item" id="export-finance-btn"><svg class="icon" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg><span>نسخة المالية (Excel)</span></button>
+            <button type="button" class="menu-item" id="export-finance-pdf-btn"><svg class="icon" viewBox="0 0 24 24"><path d="M6 9V2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2"/><path d="M15 2v5h5"/></svg><span>نسخة المالية (PDF)</span></button>
+            <button type="button" class="menu-item" id="export-hr-btn"><svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>نسخة الموارد البشرية (Excel)</span></button>
+            <button type="button" class="menu-item" id="export-hr-pdf-btn"><svg class="icon" viewBox="0 0 24 24"><path d="M6 9V2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2"/><path d="M15 2v5h5"/></svg><span>نسخة الموارد البشرية (PDF)</span></button>
+            <div class="menu-sep"></div>
+            <div class="menu-label">إدارة الفترة الحالية</div>
+            <button type="button" class="menu-item" id="new-period-btn"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>إنشاء فترة جديدة</span></button>
+            <button type="button" class="menu-item" id="save-period-btn"><svg class="icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span>حفظ الفترة (ملف JSON)</span></button>
+            <button type="button" class="menu-item" id="load-period-btn"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>استيراد فترة محفوظة</span></button>
+            <button type="button" class="menu-item" id="reset-btn"><svg class="icon" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg><span>استرجاع القيم الأصلية</span></button>
+            <div class="menu-sep"></div>
+            <button type="button" class="menu-item" id="delete-period-btn" style="color:var(--red)"><svg class="icon" viewBox="0 0 24 24" style="stroke:var(--red)"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>حذف هذه الفترة نهائيًا</span></button>
+          </div>
+        </div>
+        <input type="file" id="load-period-file" accept=".json" style="display:none">
+      </div>
+    </div>
+    <main id="main"></main>
+  </div>
+
+</div>
+<div id="toast-wrap"></div>
+</div>
+
+<script>
+
+const RAW = [{"legacy": 1.0, "name": "نايف الجهنى", "job": null, "loc": "المدينة المنورة", "base": 20000.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "كاش ", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 2.0, "name": "ام نايف فاطمه الجهنى", "job": null, "loc": "المدينة المنورة", "base": 1500.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "تحويل بنكي", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 3.0, "name": "هانى خليل", "job": null, "loc": "المدينة المنورة", "base": 5000.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "مدد", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 4.0, "name": "محمد صالح", "job": null, "loc": "المدينة المنورة", "base": 5000.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "مدد", "advBalance": 4046.32, "advThisMonth": 0, "notes": null}, {"legacy": 6.0, "name": "احمد أبو الفتوح", "job": null, "loc": "المدينة المنورة", "base": 4000.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "مدد", "advBalance": 1464.6, "advThisMonth": 1200.0, "notes": null}, {"legacy": 7.0, "name": "اكرم حسين", "job": null, "loc": "المدينة المنورة", "base": 3500.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "مدد", "advBalance": 1000, "advThisMonth": 500.0, "notes": null}, {"legacy": 3.0, "name": "عبدالله الرماغه", "job": null, "loc": "ماليزيا", "base": 4500.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "برق ماليزيا", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 4.0, "name": "عبدالرزاق", "job": null, "loc": "اليمن", "base": 1300.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "تحويل", "advBalance": 250, "advThisMonth": 250.0, "notes": null}, {"legacy": 5.0, "name": "المهندس خالد", "job": null, "loc": "تركيا", "base": 7500.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "مخصص", "advBalance": 931.5, "advThisMonth": 0, "notes": null}, {"legacy": 11.0, "name": "محمد الحبيب", "job": null, "loc": "المدينة المنورة", "base": 3500.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "مدد", "advBalance": 2000, "advThisMonth": 0, "notes": null}, {"legacy": 12.0, "name": "حامد قاسم", "job": null, "loc": "المدينة المنورة", "base": 16000.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "مدد", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 6.0, "name": "عبد الرحمن مراد", "job": null, "loc": "المدينة المنورة", "base": 5500.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "كاش ", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 7.0, "name": "عبد الرحمن مرتضى", "job": null, "loc": "المدينة المنورة", "base": 7500.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "SA6880000858608019288203", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 8.0, "name": "رهف السيد", "job": null, "loc": "جدة", "base": 7500.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "حساب أبو اياد الأهلي ", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 9.0, "name": "غيداء الحازمي", "job": null, "loc": "جدة", "base": 4000.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "SA5980000191608010195179", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 10.0, "name": "روان تركيا", "job": null, "loc": "تركيا", "base": 2062.5, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "ويسترن يونيون", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 11.0, "name": "بيتر", "job": null, "loc": "مصر", "base": 947.62, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "برق - مصر", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 12.0, "name": "أحمد بشرى", "job": null, "loc": "مصر", "base": 13500.0, "cur": "جنيه مصري", "extra1": 0, "extra2": 0, "bank": 0, "channel": "برق - مصر", "advBalance": 2456.42, "advThisMonth": 0, "notes": "سلفة 2056.42 ريال"}, {"legacy": 13.0, "name": "ريموندا", "job": null, "loc": "مصر", "base": 947.62, "cur": "جنيه مصري", "extra1": 0, "extra2": 0, "bank": 0, "channel": "برق - مصر", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 22.0, "name": "خالد الجبري", "job": null, "loc": "المدينة المنورة", "base": 2500.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "مدد", "advBalance": 500, "advThisMonth": 0, "notes": null}, {"legacy": 23.0, "name": "محمد إسكندر", "job": null, "loc": "المدينة المنورة", "base": 2250.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "مدد", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 14.0, "name": "أحمد الكوماني", "job": null, "loc": "اليمن", "base": 1500.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "بن يعلا", "advBalance": 1600, "advThisMonth": 0, "notes": null}, {"legacy": 25.0, "name": "مها الجهني", "job": null, "loc": "جدة", "base": 4000.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "مدد", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 15.0, "name": "مسؤول الموارد البشرية", "job": null, "loc": "عن بعد", "base": 5000.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "SA2980206788365222121016", "advBalance": 0, "advThisMonth": 0, "notes": 0.0}, {"legacy": 28.0, "name": "عبدالعزيز الشايع", "job": null, "loc": "المدينة المنورة", "base": 7500.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "مدد", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 29.0, "name": "العنود الرشيدي", "job": null, "loc": "جدة", "base": 3000.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "مدد", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 16.0, "name": "صفية المالية", "job": null, "loc": "مصر", "base": 947.62, "cur": "جنيه مصري", "extra1": 0, "extra2": 0, "bank": 0, "channel": "برق - مصر", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 31.0, "name": "منير اسلام", "job": null, "loc": "المدينة المنورة", "base": 1300.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "مدد", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 17.0, "name": "إيهاب عثمان", "job": null, "loc": "المدينة المنورة", "base": 6000.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "كاش ", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 18.0, "name": "رشا واصف خليفة", "job": null, "loc": "تركيا", "base": 1125.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "ويسترن يونيون - 300 دولار", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 19.0, "name": "اسوار خالا سعد", "job": null, "loc": "أندنوسيا", "base": 1000.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "ويسترن يونيون", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 20.0, "name": "أسماء عادل", "job": null, "loc": "مصر", "base": 640.0, "cur": "جنيه مصري", "extra1": 0, "extra2": 0, "bank": 0, "channel": "ويسترن يونيون", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 21.0, "name": "محمد علي محمد جاد", "job": null, "loc": "مصر", "base": 1000.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "برق - مصر", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 22.0, "name": "حمزة الريس", "job": null, "loc": "المدينة المنورة", "base": 5000.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "كاش ", "advBalance": 500, "advThisMonth": 250.0, "notes": null}, {"legacy": 23.0, "name": "أحمد القدسي", "job": null, "loc": "المدينة المنورة", "base": 2500.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "كاش ", "advBalance": 463.0, "advThisMonth": 0, "notes": null}, {"legacy": 24.0, "name": "سلطان عبد العزيز", "job": null, "loc": "ماليزيا", "base": 2290.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "برق ماليزيا", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 25.0, "name": "شهاب النهاري", "job": null, "loc": "ماليزيا", "base": 2000.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "برق ماليزيا", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 26.0, "name": "أحمد الرفاعي", "job": null, "loc": "العراق", "base": 3000.0, "cur": "ريال", "extra1": 0, "extra2": 0, "bank": 0, "channel": "برق - العراق", "advBalance": 0, "advThisMonth": 0, "notes": null}, {"legacy": 27.0, "name": "محمد صبري", "job": null, "loc": "المدينة المنورة", "base": 13000.0, "cur": "ريال ", "extra1": 0, "extra2": 0, "bank": 2000.0, "channel": "مدد", "advBalance": 0, "advThisMonth": 0, "notes": 0.0}, {"legacy": 28.0, "name": "مريم ايمن شوقي الياس", "job": null, "loc": "مصر", "base": 6000.0, "cur": "جنيه مصري", "extra1": 0, "extra2": 0, "bank": 0, "channel": null, "advBalance": 0, "advThisMonth": 0, "notes": null}];
+const LOGO_B64 = "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";
+const AMBIGUOUS = ["بن يعلا","مخصص"];
+
+// ============ نظام أدوار تجريبي (ليس حماية أمنية حقيقية — انظر التنبيه في شاشة الدخول) ============
+// ============ إعداد الاتصال بخادم سحابي مجاني (Supabase) ============
+// للتفعيل: أنشئ مشروعًا مجانيًا على supabase.com (بلا بطاقة ائتمان)، ثم الصق بيانات مشروعك هنا:
+const SUPABASE_URL = "";       // مثال: https://xxxxxxxx.supabase.co
+const SUPABASE_ANON_KEY = "";  // من إعدادات المشروع > API > anon public
+const SERVER_ENABLED = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+let supabase = null;
+let cloudSession = null;
+
+const ROLES = {
+  ceo:        {label:"المدير التنفيذي",      canEdit:true,  canEditSettings:true,  canExport:true,  tabs:["dashboard","quickreport","payroll","employees","advances","exceptions","editlog","users"]},
+  hr:         {label:"مدير الموارد البشرية", canEdit:true,  canEditSettings:false, canExport:false, tabs:["dashboard","quickreport","payroll","employees","advances","exceptions","editlog"]},
+  finance:    {label:"المدير المالي",        canEdit:true,  canEditSettings:true,  canExport:true,  tabs:["dashboard","quickreport","payroll","employees","advances","exceptions","editlog","users"]},
+  accountant: {label:"محاسب الرواتب",        canEdit:true,  canEditSettings:false, canExport:false, tabs:["dashboard","quickreport","payroll","employees","advances","exceptions","editlog"]},
+  auditor:    {label:"المدقق",               canEdit:false, canEditSettings:false, canExport:false, tabs:["dashboard","payroll","employees","advances","exceptions","editlog"]},
+  employee:   {label:"الموظف",               canEdit:false, canEditSettings:false, canExport:false, tabs:["mypayslip"]},
+};
+let currentRole = null;
+
+// ============ حسابات مستخدمين فردية (كل شخص له اسم مستخدم وكلمة مرور خاصة به) ============
+// هذه حسابات تجريبية أولية فقط — يمكن لأي مستخدم بصلاحية "إدارة المستخدمين" إضافة/حذف حسابات من تبويب "المستخدمون"
+let USERS = [
+  {username:"ceo",   name:"حامد قاسم",   role:"ceo",        password:"Ceo@2026"},
+  {username:"hr1",   name:"منى الحربي",      role:"hr",         password:"Hr@2026"},
+  {username:"fin1",  name:"خالد المطيري",    role:"finance",    password:"Fin@2026"},
+  {username:"acc1",  name:"فهد الزهراني",    role:"accountant", password:"Acc@2026"},
+  {username:"aud1",  name:"نورة القحطاني",   role:"auditor",    password:"Aud@2026"},
+  {username:"m.saleh", name:"محمد صالح",     role:"employee",   password:"Mp@2026", employeeName:"محمد صالح"},
+  {username:"h.khalil", name:"هانى خليل",    role:"employee",   password:"Hk@2026", employeeName:"هانى خليل"},
+];
+let currentUser = null; // كائن المستخدم المسجّل دخوله حاليًا (وليس فقط دوره)
+const CURRENCY_OPTIONS = ["ريال","جنيه مصري","MYR","دولار"];
+const NATIONALITY_OPTIONS = ["غير محدد","سعودي","غير سعودي"];
+const FIELD_LABELS = {base:"الراتب الأساسي", bank:"تحويل بنكي إضافي", advThisMonth:"قسط السلفة", advBalance:"رصيد السلفة الموروث", channel:"قناة الصرف", name:"اسم الموظف", jobTitle:"المسمى الوظيفي", cur:"العملة", loc:"الموقع", nationality:"الجنسية", commission:"عمولات وحوافز إضافية", absenceDays:"أيام الغياب"};
+const REFERENCE_RATES = {
+  "جنيه مصري": {rate: 0.073584, label: "الجنيه المصري", asOf: "22 يوليو 2026", source: "سعر مُدخل مباشرة من إدارة الشركة: 1 ريال سعودي = 13.59 جنيه مصري"},
+  "MYR": {rate: 0.9100, label: "الرينجت الماليزي", asOf: "21 يوليو 2026", source: "متوسط السعر المباشر (~1.10 SAR/MYR) والمشتق عبر الدولار (~4.09) — Investing/Xe"},
+  "دولار": {rate: 3.75, label: "الدولار الأمريكي", asOf: "ثابت", source: "ربط الريال السعودي بالدولار الأمريكي منذ 1986 — ساما"}
+};
+const CUR_RATE_KEY = {"جنيه مصري":"جنيه مصري", "MYR":"MYR", "رينجت":"MYR", "دولار":"دولار", "USD":"دولار"};
+
+function buildEmployeesFromRaw(raw){
+  const seen = {};
+  raw.forEach(r => seen[r.legacy] = (seen[r.legacy]||0)+1);
+  return raw.map((r, idx) => {
+    const id = "TRV-" + String(idx+1).padStart(4,"0");
+    const e = {...r, id, cur:r.cur.trim(), jobTitle:r.jobTitle||"", nationality:r.nationality||"غير محدد",
+      commission: r.commission||0, absenceDays: r.absenceDays||0, dupLegacy: seen[r.legacy]>1,
+      receivedConfirmed: r.receivedConfirmed||false, receivedAmount: r.receivedAmount!=null?r.receivedAmount:null, receivedAt: r.receivedAt||null};
+    recompute(e);
+    return e;
+  });
+}
+function recompute(e){
+  // حسم الغياب = الأساسي اليومي (الأساسي ÷ 30) × عدد أيام الغياب — وفق المعادلة المعتمدة في تصميم النظام
+  e.absenceDeduction = (e.base||0) > 0 ? (e.base/30) * (e.absenceDays||0) : 0;
+  e.gross = e.base + e.extra1 + e.extra2 + e.bank + (e.commission||0);
+  e.deduction = e.advThisMonth + e.absenceDeduction;
+  e.net = e.gross - e.deduction;
+}
+// وعاء التأمينات هنا هو الراتب الأساسي فقط (لا يوجد حقل بدل سكن منفصل بعد في هذا النموذج) — يجب تحديثه عند إضافة بدل السكن كحقل مستقل
+function gosiAmount(e, gosiRate){
+  if (e.nationality === "سعودي" && gosiRate) return e.base * (gosiRate/100);
+  return 0;
+}
+function finalNet(e, gosiRate){
+  return e.net - gosiAmount(e, gosiRate);
+}
+// نسبة المبلغ المستلم فعليًا إلى الراتب الأساسي (وليس إلى الصافي) — بناءً على طلب صريح
+function receivedRatio(e){
+  if (e.receivedAmount == null || !e.base) return null;
+  return (e.receivedAmount / e.base) * 100;
+}
+function flagsFor(e){
+  const flags = [];
+  if (e.dupLegacy) flags.push({level:"error", text:"الرقم التسلسلي القديم ("+e.legacy+") مكرر مع موظف آخر"});
+  if (!e.channel) flags.push({level:"error", text:"سجل غير مكتمل: لا توجد قناة صرف — مستبعد من الصرف"});
+  if (e.channel && AMBIGUOUS.includes(e.channel.trim())) flags.push({level:"warning", text:'قناة صرف غامضة ("'+e.channel+'") تحتاج توثيق'});
+  if (e.channel && e.channel.trim().startsWith("SA") && e.channel.trim().length > 15) flags.push({level:"warning", text:"آيبان مكتوب مباشرة في حقل القناة"});
+  if (e.channel && e.channel.includes("حساب")) flags.push({level:"warning", text:"صرف عبر حساب طرف ثالث — يتطلب اعتماد استثناء موثّق"});
+  if (e.channel && e.channel.includes("دولار")) flags.push({level:"warning", text:"قناة الصرف تحمل مبلغًا بعملة أجنبية (دولار) كنص"});
+  if (e.name === "مسؤول الموارد البشرية") flags.push({level:"error", text:"اسم الموظف مسمى وظيفي وليس اسمًا حقيقيًا"});
+  if (!e.jobTitle) flags.push({level:"warning", text:"المسمى الوظيفي غير مُدخل"});
+  if (e.loc === "ماليزيا" && e.cur === "ريال") flags.push({level:"warning", text:"الموقع ماليزيا لكن العملة مسجّلة ريال — يُحتمل أنها رينجت (MYR)"});
+  if (e.name === "أحمد بشرى") flags.push({level:"warning", text:"سلفة موثّقة بالريال بينما الراتب بالجنيه المصري"});
+  if (e.name === "محمد صبري") flags.push({level:"error", text:"فرق سابق غير مفسَّر بين المستحق والصافي في الملف الأصلي — يحتاج اعتماد HR"});
+  if (e.advBalance > 0) flags.push({level:"info", text:"رصيد سلفة موروث ("+e.advBalance.toLocaleString()+") بانتظار مطابقة دفتر حركات فعلي"});
+  if (e.base < 0 || e.bank < 0 || e.advThisMonth < 0 || e.advBalance < 0 || e.commission < 0) flags.push({level:"error", text:"يوجد قيمة سالبة في أحد الحقول المالية — راجعها"});
+  if (e.absenceDays < 0) flags.push({level:"error", text:"عدد أيام الغياب لا يمكن أن يكون سالبًا"});
+  if (e.absenceDays > 30) flags.push({level:"warning", text:"عدد أيام الغياب أكبر من أيام الشهر — تحقق من القيمة"});
+  if ((!e.nationality || e.nationality === "غير محدد") && PERIODS[currentKey] && PERIODS[currentKey].gosiRate) flags.push({level:"warning", text:"الجنسية غير محددة — لن تُحتسب التأمينات لهذا الموظف حتى تُحدَّد (سعودي/غير سعودي)"});
+  if (e.nationality === "سعودي" && (!PERIODS[currentKey] || !PERIODS[currentKey].gosiRate)) flags.push({level:"info", text:"موظف سعودي — لم تُدخل بعد نسبة استقطاع التأمينات لهذه الفترة"});
+  if (e.channel && !e.receivedConfirmed) flags.push({level:"info", text:"لم يُؤكَّد استلام الراتب بعد لهذه الفترة"});
+  if (e.receivedConfirmed && e.receivedAmount != null){
+    const gosiRateChk = PERIODS[currentKey] ? PERIODS[currentKey].gosiRate : null;
+    const expected = finalNet(e, gosiRateChk);
+    if (Math.abs(e.receivedAmount - expected) > 0.01) flags.push({level:"warning", text:"المبلغ المؤكَّد استلامه ("+money(e.receivedAmount)+") يختلف عن صافي الراتب المحسوب ("+money(expected)+") — يحتاج توضيح"});
+  }
+  return flags;
+}
+function money(n){ if(n===null||n===undefined||isNaN(n)) return "—"; return Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function computeSar(e, rates, gosiRate){
+  const netFinal = finalNet(e, gosiRate);
+  if (e.cur === "ريال") return netFinal;
+  const key = CUR_RATE_KEY[e.cur];
+  if (key && rates[key]) return netFinal * rates[key];
+  return null;
+}
+
+// ---------- Period management ----------
+let PERIODS = {};
+PERIODS["2026-07"] = {
+  label: "يوليو 2026",
+  employees: buildEmployeesFromRaw(RAW),
+  editLog: [],
+  rates: {"جنيه مصري":0.073584, "MYR":null, "دولار":null},
+  gosiRate: null,
+  savedSnapshot: null // JSON string of last-saved state, to detect unsaved changes
+};
+let currentKey = "2026-07";
+function cp(){ return PERIODS[currentKey]; }
+function periodSnapshotStr(p){ return JSON.stringify({employees:p.employees, rates:p.rates, gosiRate:p.gosiRate}); }
+function hasUnsaved(){
+  const p = cp();
+  return p.savedSnapshot !== periodSnapshotStr(p);
+}
+
+function logEdit(emp, field, oldVal, newVal){
+  const actor = currentUser ? currentUser.name : (cloudSession ? cloudSession.user.email : "غير معروف");
+  cp().editLog.push({emp: emp.name, id: emp.id, field, oldVal, newVal, by: actor, time: new Date().toLocaleTimeString("ar-SA")});
+}
+
+function toast(msg){
+  const wrap = document.getElementById("toast-wrap");
+  const t = document.createElement("div");
+  t.className = "toast"; t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(()=>{ t.style.opacity="0"; t.style.transition="opacity .3s"; setTimeout(()=>t.remove(), 300); }, 3200);
+}
+
+// ---------- Tabs ----------
+const TABS_BASE = [
+  {key:"dashboard", label:"لوحة التحكم"},
+  {key:"quickreport", label:"تقرير سريع"},
+  {key:"payroll", label:"المسير"},
+  {key:"employees", label:"الموظفون"},
+  {key:"advances", label:"السلف"},
+  {key:"exceptions", label:"الاستثناءات"},
+  {key:"editlog", label:"سجل التعديلات"},
+  {key:"mypayslip", label:"كشف راتبي"},
+  {key:"users", label:"المستخدمون"},
+];
+let activeTab = "dashboard";
+let sortKey = null, sortDir = 1;
+let empFilter = "";
+let payrollFilter = "";
+
+function roleObj(){ return ROLES[currentRole] || {tabs:[], canEdit:false, canEditSettings:false, canExport:false}; }
+
+const NAV_ICONS = {
+  dashboard:  '<path d="M3 13h8V3H3v10zM13 21h8V11h-8v10zM13 3v6h8V3h-8zM3 21h8v-6H3v6z"/>',
+  payroll:    '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>',
+  employees:  '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  advances:   '<rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
+  exceptions: '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  editlog:    '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/>',
+  mypayslip:  '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/>',
+  users:      '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  quickreport:'<path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/>',
+};
+
+function renderPeriodBar(){
+  const topbar = document.querySelector(".topbar");
+  if (currentRole === "employee"){ topbar.style.display = "none"; return; }
+  topbar.style.display = "flex";
+  const sel = document.getElementById("period-select");
+  const keys = Object.keys(PERIODS).sort();
+  sel.innerHTML = keys.map(k => `<option value="${k}" ${k===currentKey?'selected':''}>${PERIODS[k].label}</option>`).join("");
+  sel.onchange = () => {
+    currentKey = sel.value; sortKey=null; empFilter=""; payrollFilter=""; render();
+  };
+  const canManagePeriods = roleObj().canEdit || currentRole === "finance";
+  ["new-period-btn","save-period-btn","load-period-btn","delete-period-btn"].forEach(id => {
+    document.getElementById(id).style.display = canManagePeriods ? "flex" : "none";
+  });
+  document.getElementById("delete-period-btn").disabled = keys.length <= 1;
+  const ind = document.getElementById("unsaved-indicator");
+  ind.innerHTML = hasUnsaved() ? '<span class="unsaved-dot"></span> لم يُصدَّر كملف JSON بعد' : '<span style="color:var(--green)">مُصدَّر كملف ✓</span>';
+}
+
+function renderNav(){
+  const nav = document.getElementById("nav");
+  const allowed = roleObj().tabs;
+  const tabs = TABS_BASE.filter(t => allowed.includes(t.key)).map(t => t.key==="editlog" ? {...t, label:`سجل التعديلات (${cp().editLog.length})`} : t);
+  nav.innerHTML = tabs.map(t => `<button data-tab="${t.key}" class="${activeTab===t.key?'active':''}"><svg class="icon" viewBox="0 0 24 24">${NAV_ICONS[t.key]||''}</svg><span>${t.label}</span></button>`).join("");
+  nav.querySelectorAll("button").forEach(b => b.onclick = () => { activeTab = b.dataset.tab; render(); });
+}
+
+function totalsByCurrency(){
+  const tot = {}; let exceptions = 0;
+  const gosiRate = cp().gosiRate;
+  cp().employees.forEach(e => {
+    tot[e.cur] = (tot[e.cur]||0) + finalNet(e, gosiRate);
+    if (flagsFor(e).some(f=>f.level==="error")) exceptions++;
+  });
+  return {tot, exceptions};
+}
+
+// ============ تقرير سريع مبدئي — مدخل مبسّط منفصل عن بيانات المسير التفصيلية ============
+function quickDed(id){
+  if (!cp().quickDeductions) cp().quickDeductions = {};
+  return cp().quickDeductions[id] || 0;
+}
+function setQuickDed(id, val){
+  if (!cp().quickDeductions) cp().quickDeductions = {};
+  cp().quickDeductions[id] = val;
+}
+function renderQuickReport(){
+  const employees = cp().employees;
+  let totalBase = 0, totalDed = 0, totalNet = 0;
+  const rows = employees.map(e => {
+    const ded = quickDed(e.id);
+    const net = Math.max(0, e.base - ded);
+    totalBase += e.base; totalDed += ded; totalNet += net;
+    return `<tr data-id="${e.id}">
+      <td>${e.name}</td>
+      <td>${money(e.base)} ${e.cur}</td>
+      <td><input class="cell-input" type="number" step="0.01" data-qid="${e.id}" value="${ded}" placeholder="0"></td>
+      <td style="font-weight:700">${money(net)} ${e.cur}</td>
+    </tr>`;
+  }).join("");
+  return `
+  <div class="banner info">
+    ⚡ هذا <strong>تقرير تقديري سريع</strong> لإعطاء فكرة أولية عن إجمالي الرواتب قبل إكمال كل التفاصيل في تبويب "المسير" (الغياب، العمولات، التأمينات، السلف...). الرقم هنا <strong>تقريبي وليس نهائيًا</strong>، ولا يُستخدم كمسير رواتب معتمد.
+  </div>
+  <div class="panel">
+    <div style="font-weight:700;margin-bottom:10px">إدخال مبسّط: خصم تقديري واحد لكل موظف</div>
+    <div class="note" style="margin:0 0 10px">أدخل رقمًا تقديريًا واحدًا لإجمالي الخصومات المتوقعة لكل موظف (بدلًا من تفصيلها بندًا ببند) للحصول على صافٍ تقريبي سريع.</div>
+    <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr><th>الموظف</th><th>الراتب الأساسي</th><th>خصم تقديري (مبلغ واحد)</th><th>الصافي التقريبي</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr>
+        <td style="font-weight:700">الإجمالي (بالعملات المختلطة — تقريبي فقط)</td>
+        <td style="font-weight:700">${money(totalBase)}</td>
+        <td style="font-weight:700">${money(totalDed)}</td>
+        <td style="font-weight:700">${money(totalNet)}</td>
+      </tr></tfoot>
+    </table>
+    </div>
+  </div>
+  <div class="toolbar">
+    <button type="button" class="btn btn-primary" id="quick-export-excel-btn">تنزيل التقرير السريع (Excel)</button>
+    <button type="button" class="btn btn-secondary" id="quick-export-pdf-btn">تنزيل التقرير السريع (PDF)</button>
+  </div>
+  `;
+}
+
+function renderDashboard(){
+  const {tot, exceptions} = totalsByCurrency();
+  const employees = cp().employees;
+  const missingRate = employees.some(e => e.cur !== "ريال" && computeSar(e, cp().rates, cp().gosiRate) === null);
+
+  const byLoc = {};
+  employees.forEach(e => byLoc[e.loc||"—"] = (byLoc[e.loc||"—"]||0)+1);
+  const locEntries = Object.entries(byLoc).sort((a,b)=>b[1]-a[1]);
+  const maxLoc = Math.max(1, ...locEntries.map(([,c])=>c));
+  const locBars = locEntries.map(([loc,c]) => `
+    <div class="bar-row">
+      <span class="bar-label">${loc}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(c/maxLoc*100).toFixed(0)}%"></div></div>
+      <span class="bar-value">${c}</span>
+    </div>`).join("");
+
+  const byChannel = {};
+  employees.forEach(e => { const k = (e.channel||"غير محدد").trim() || "غير محدد"; byChannel[k] = (byChannel[k]||0)+1; });
+  const chEntries = Object.entries(byChannel).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxCh = Math.max(1, ...chEntries.map(([,c])=>c));
+  const chBars = chEntries.map(([ch,c]) => `
+    <div class="bar-row">
+      <span class="bar-label">${ch}</span>
+      <div class="bar-track"><div class="bar-fill alt" style="width:${(c/maxCh*100).toFixed(0)}%"></div></div>
+      <span class="bar-value">${c}</span>
+    </div>`).join("");
+
+  const sarEmployees = employees.filter(e => e.cur === "ريال");
+  const avgBase = sarEmployees.length ? sarEmployees.reduce((s,e)=>s+e.base,0)/sarEmployees.length : 0;
+  const topEmp = sarEmployees.slice().sort((a,b)=>b.base-a.base)[0];
+  const totalAdvances = employees.reduce((s,e)=>s+(e.advBalance||0),0);
+
+  const recentEdits = cp().editLog.slice(-4).reverse();
+  const recentEditsHtml = recentEdits.length
+    ? recentEdits.map(l => `<div class="mini-row"><span>${l.emp}</span><span class="mini-muted">${FIELD_LABELS[l.field]||l.field}</span></div>`).join("")
+    : `<div class="note" style="margin:0">لا توجد تعديلات في هذه الفترة بعد.</div>`;
+
+  return `
+  <div class="cards">
+    <div class="card"><div class="dash-icon">👥</div><div class="label">عدد الموظفين</div><div class="value">${employees.length}</div></div>
+    <div class="card"><div class="dash-icon">💰</div><div class="label">إجمالي صافي الريال (SAR)</div><div class="value">${money(tot["ريال"]||0)}</div></div>
+    <div class="card"><div class="dash-icon">💵</div><div class="label">إجمالي صافي الجنيه المصري (EGP)</div><div class="value">${money(tot["جنيه مصري"]||0)}</div></div>
+    <div class="card warncard"><div class="dash-icon">⚠️</div><div class="label">سجلات تحتاج معالجة</div><div class="value">${exceptions}</div></div>
+  </div>
+
+  <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+    <div class="card mini"><div class="label">متوسط الراتب الأساسي (ريال)</div><div class="value" style="font-size:17px">${money(avgBase)}</div></div>
+    <div class="card mini"><div class="label">أعلى راتب أساسي (ريال)</div><div class="value" style="font-size:17px">${topEmp?money(topEmp.base)+' — '+topEmp.name:'—'}</div></div>
+    <div class="card mini"><div class="label">إجمالي أرصدة السلف القائمة</div><div class="value" style="font-size:17px">${money(totalAdvances)}</div></div>
+  </div>
+
+  ${missingRate ? `<div class="banner">⚠️ لا يمكن احتساب المقابل الإجمالي بالريال بدقة لبعض الموظفين — أدخل سعر الصرف من تبويب "المسير".</div>` : ""}
+  ${cp().editLog.length ? `<div class="banner info">ℹ️ تم إجراء ${cp().editLog.length} تعديلًا يدويًا في فترة "${cp().label}". راجعها من تبويب "سجل التعديلات"، ولا تنسَ حفظ الفترة.</div>` : ""}
+
+  <div class="dash-grid">
+    <div class="panel">
+      <div class="panel-title">التوزيع حسب الموقع</div>
+      ${locBars || '<div class="note" style="margin:0">لا بيانات بعد.</div>'}
+    </div>
+    <div class="panel">
+      <div class="panel-title">التوزيع حسب قناة الصرف</div>
+      ${chBars || '<div class="note" style="margin:0">لا بيانات بعد.</div>'}
+    </div>
+  </div>
+
+  <div class="dash-grid">
+    <div class="panel">
+      <div class="panel-title">آخر التعديلات في هذه الفترة</div>
+      ${recentEditsHtml}
+    </div>
+    <div class="panel">
+      <div class="panel-title">اختصارات مفيدة</div>
+      <div class="note" style="margin:0;line-height:1.9">
+        • انقر أي عمود في جدول "المسير" للفرز به.<br>
+        • اضغط <kbd>Enter</kbd> بعد التعديل في أي خلية لتأكيدها فورًا.<br>
+        • استخدم مربع البحث في تبويبَي "المسير" و"الموظفون" للتصفية السريعة.<br>
+        • لا تنسَ "حفظ هذه الفترة" من الشريط العلوي قبل إغلاق الصفحة.
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+const SIMPLE_COLS = new Set(["id","name","cur","base","gross","advThisMonth","net","sar","status"]);
+let payrollDense = false; // false = مبسّط (افتراضي)، true = كامل التفاصيل
+
+function renderPayroll(){
+  const gosiRate = cp().gosiRate;
+  const cols = [
+    ["id","الرقم الوظيفي"], ["name","الاسم"], ["loc","الموقع"], ["base","الأساسي (قابل للتعديل)"],
+    ["cur","العملة (قابل للتعديل)"], ["bank","تحويل إضافي (قابل للتعديل)"], ["commission","عمولات وحوافز (قابل للتعديل)"],
+    ["gross","المستحق بعملته"], ["absenceDays","أيام الغياب (قابل للتعديل)"], ["absenceDeduction","حسم الغياب"],
+    ["advThisMonth","قسط السلفة (قابل للتعديل)"], ["gosi","استقطاع التأمينات"], ["net","الصافي النهائي بعملته"],
+    ["sar","الصافي بالريال (SAR)"], ["received","تأكيد الاستلام"], ["status","الحالة"]
+  ];
+  let rows = cp().employees.slice();
+  if (payrollFilter.trim()){
+    const f = payrollFilter.trim().toLowerCase();
+    rows = rows.filter(e => e.name.toLowerCase().includes(f) || e.loc.toLowerCase().includes(f) || (e.channel||"").toLowerCase().includes(f));
+  }
+  // pre-compute derived (non-stored) fields so sorting by them works correctly
+  rows = rows.map(e => {
+    const sarVal = computeSar(e, cp().rates, gosiRate);
+    const hasErr = flagsFor(e).some(f=>f.level==="error");
+    return {...e, gosi: gosiAmount(e, gosiRate), net: finalNet(e, gosiRate), sar: sarVal===null?-Infinity:sarVal, status: hasErr?0:1};
+  });
+  if (sortKey){
+    rows.sort((a,b)=>{
+      let av=a[sortKey], bv=b[sortKey];
+      if (typeof av === "string") return sortDir*av.localeCompare(bv,'ar');
+      return sortDir*((av||0)-(bv||0));
+    });
+  }
+  const curOptions = c => CURRENCY_OPTIONS.map(o => `<option value="${o}" ${o===c?'selected':''}>${o}</option>`).join("");
+  const hc = k => (!SIMPLE_COLS.has(k) && !payrollDense) ? 'col-hidden' : '';
+  let sarTotalSar = 0, sarTotalUnknown = false;
+  const body = rows.map(e => {
+    const flags = flagsFor(e);
+    const hasError = flags.some(f=>f.level==="error");
+    const sar = e.sar === -Infinity ? null : e.sar;
+    if (sar !== null) sarTotalSar += sar; else sarTotalUnknown = true;
+    const sarDisplay = e.cur === "ريال" ? `${money(sar)} ريال` : (sar!==null ? `≈ ${money(sar)} ريال` : 'بانتظار سعر الصرف');
+    const negBase = e.base < 0 ? "negval" : "", negBank = e.bank < 0 ? "negval" : "", negAdv = e.advThisMonth < 0 ? "negval" : "";
+    const negComm = e.commission < 0 ? "negval" : "", negAbs = e.absenceDays < 0 ? "negval" : "";
+    return `<tr class="${hasError?'warn':''} ${anyEdited(e)?'edited':''}" data-id="${e.id}">
+      <td class="${hc('id')}">${e.id}</td><td class="${hc('name')}">${e.name}</td><td class="${hc('loc')}">${e.loc}</td>
+      <td class="${hc('base')}"><input class="cell-input ${negBase}" type="number" step="0.01" data-field="base" value="${e.base}"></td>
+      <td class="${hc('cur')}"><select class="cell-input" data-field="cur">${curOptions(e.cur)}</select></td>
+      <td class="${hc('bank')}"><input class="cell-input ${negBank}" type="number" step="0.01" data-field="bank" value="${e.bank}"></td>
+      <td class="${hc('commission')}"><input class="cell-input ${negComm}" type="number" step="0.01" data-field="commission" value="${e.commission||0}"></td>
+      <td class="${hc('gross')}">${money(e.gross)} ${e.cur}</td>
+      <td class="${hc('absenceDays')}"><input class="cell-input ${negAbs}" type="number" step="1" data-field="absenceDays" value="${e.absenceDays||0}"></td>
+      <td class="${hc('absenceDeduction')}">${e.absenceDeduction>0?money(e.absenceDeduction)+' '+e.cur:'—'}</td>
+      <td class="${hc('advThisMonth')}"><input class="cell-input ${negAdv}" type="number" step="0.01" data-field="advThisMonth" value="${e.advThisMonth}"></td>
+      <td class="${hc('gosi')}">${e.gosi>0?money(e.gosi)+' '+e.cur:'—'}</td>
+      <td class="${hc('net')}" style="font-weight:700">${money(e.net)} ${e.cur}</td>
+      <td class="${hc('sar')}" style="font-weight:700">${sarDisplay}</td>
+      <td class="${hc('received')}">${e.receivedConfirmed?`<span class="badge badge-ok">✅ ${money(e.receivedAmount)}</span><div style="font-size:10.5px;color:#6B7280;margin-top:3px">${receivedRatio(e)!==null?receivedRatio(e).toFixed(1)+'% من الأساسي':''} · ${e.receivedAt||''}</div>`:'<span style="color:#9CA3AF;font-size:12px">لم يؤكَّد</span>'}</td>
+      <td class="${hc('status')}">${hasError?'<span class="badge badge-warn">يحتاج معالجة</span>':'<span class="badge badge-ok">جاهز</span>'}${anyEdited(e)?'<span class="badge badge-edited">معدّل</span>':''}</td>
+    </tr>`;
+  }).join("");
+  const headRow = cols.map(([k,label]) => `<th class="${hc(k)}" data-key="${k}">${label} ${sortKey===k?(sortDir>0?'▲':'▼'):''}</th>`).join("");
+  const visibleColsBeforeSar = cols.filter(([k]) => k !== "sar" && k !== "status" && (payrollDense || SIMPLE_COLS.has(k))).length;
+  const footRow = `<tr><td colspan="${visibleColsBeforeSar}" style="text-align:right">إجمالي الصافي بالريال لهذا العرض</td><td>${sarTotalUnknown?'≈ '+money(sarTotalSar)+' (+ بنود بانتظار سعر الصرف)':money(sarTotalSar)+' ريال'}</td><td></td><td></td></tr>`;
+  const refRow = (key, inputId) => {
+    const r = REFERENCE_RATES[key];
+    return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <label style="min-width:150px">${r.label} <input type="number" step="0.0001" id="${inputId}" placeholder="غير محدد"></label>
+      <span style="font-size:11.5px;color:#666">مرجعي تقريبي: <strong>${r.rate}</strong> (${r.asOf}) <button type="button" class="small-btn" data-apply="${key}">استخدام هذا السعر</button></span>
+    </div>`;
+  };
+  return `
+  <div class="panel">
+    <div style="font-weight:700;margin-bottom:10px">نسبة استقطاع التأمينات الاجتماعية (للموظفين السعوديين فقط) لفترة "${cp().label}"</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <label style="min-width:150px">النسبة % <input type="number" step="0.01" id="gosi-rate" placeholder="غير محدد" style="width:90px;padding:5px 8px;border:1px solid #ccc;border-radius:6px"></label>
+    </div>
+    <div class="note">⚠️ لا تُدخل هذه النسبة افتراضيًا. المصادر العامة المتوفرة حاليًا متضاربة (تتراوح المذكورات بين 9% و11.75% تبعًا لنظام المعاشات القديم أو الجديد ولمكوّن "ساند")، لذا يجب تأكيد النسبة الفعلية المطبَّقة على الشركة من موقع gosi.gov.sa أو من إدارة الموارد البشرية قبل اعتمادها. كما أن الوعاء المحتسب هنا هو الراتب الأساسي فقط لعدم وجود حقل "بدل سكن" منفصل بعد — وعاء الاشتراك الرسمي يشمل بدل السكن أيضًا.</div>
+  </div>
+  <div class="panel">
+    <div style="font-weight:700;margin-bottom:10px">أسعار الصرف مقابل الريال لفترة "${cp().label}" (اختياري — لا يُعتمد أي سعر تلقائيًا)</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${refRow("جنيه مصري","rate-egp")}
+      ${refRow("MYR","rate-myr")}
+      ${refRow("دولار","rate-usd")}
+    </div>
+    <div class="note">أسعار مرجعية تقريبية من بيانات سوق عامة — يجب على المدير المالي تأكيدها قبل الاعتماد.</div>
+  </div>
+  <div class="toolbar">
+    <input type="search" id="payroll-search" placeholder="بحث بالاسم أو الموقع أو القناة..." value="${payrollFilter}">
+    <div class="view-toggle" id="payroll-view-toggle">
+      <button type="button" data-dense="0" class="${!payrollDense?'active':''}">مبسّط</button>
+      <button type="button" data-dense="1" class="${payrollDense?'active':''}">كل التفاصيل</button>
+    </div>
+  </div>
+  ${cp().employees.length === 0
+    ? `<div class="panel" style="text-align:center;color:#888;padding:30px">لا يوجد موظفون في فترة "${cp().label}" بعد. أضفهم من تبويب "الموظفون".</div>`
+    : `<div class="note" style="margin-bottom:8px">عدّل أي خلية بخلفية فاتحة، ثم اضغط <kbd>Enter</kbd> أو انقر خارجها لتحديث الحساب فورًا. الحقول بإطار أحمر تحتوي قيمة سالبة تحتاج مراجعة.</div>
+  <div style="overflow-x:auto; border-radius:10px;">
+  <table class="tbl"><thead><tr>${headRow}</tr></thead><tbody>${body}</tbody><tfoot>${footRow}</tfoot></table>
+  </div>`}
+  `;
+}
+
+function renderEmployees(){
+  const filter = empFilter.trim().toLowerCase();
+  const list = cp().employees.filter(e => !filter || e.name.toLowerCase().includes(filter) || e.loc.toLowerCase().includes(filter));
+  const emptyState = cp().employees.length === 0
+    ? `<div class="panel" style="text-align:center;color:#888;padding:30px">
+         لا يوجد أي موظف في فترة "${cp().label}" بعد.<br>
+         اضغط "+ إضافة موظف" أدناه لبدء إدخال الموظفين، أو أنشئ الفترة من جديد واختر نسخ القائمة من فترة سابقة.
+       </div>`
+    : (list.length === 0 ? `<div class="panel" style="text-align:center;color:#888;padding:20px">لا نتائج مطابقة للبحث.</div>` : "");
+  const cards = list.map(e => {
+    const flags = flagsFor(e);
+    return `
+    <div class="acc">
+      <div class="acc-head" data-id="${e.id}">
+        <span>${e.name} <span style="font-weight:400;color:#888;font-size:12px">(${e.id} · ${e.loc})</span> ${anyEdited(e)?'<span class="badge badge-edited">معدّل</span>':''}</span>
+        <span style="display:flex;align-items:center;gap:10px">
+          <button type="button" class="small-btn" data-remove="${e.id}" title="حذف الموظف من هذه الفترة">حذف</button>
+          <span>${flags.length ? '⚠' : '✓'}</span>
+        </span>
+      </div>
+      <div class="acc-body" id="body-${e.id}">
+        <div class="field-grid">
+          <div><label>اسم الموظف</label><input class="cell-input" data-field="name" data-id="${e.id}" value="${e.name}"></div>
+          <div><label>المسمى الوظيفي</label><input class="cell-input" data-field="jobTitle" data-id="${e.id}" value="${e.jobTitle||''}" placeholder="غير مُدخل"></div>
+          <div><label>الموقع</label><input class="cell-input" data-field="loc" data-id="${e.id}" value="${e.loc||''}"></div>
+          <div><label>الجنسية</label><select class="cell-input" data-field="nationality" data-id="${e.id}">${NATIONALITY_OPTIONS.map(o=>`<option value="${o}" ${o===(e.nationality||'غير محدد')?'selected':''}>${o}</option>`).join("")}</select></div>
+          <div><label>الراتب الأساسي</label><input class="cell-input" type="number" step="0.01" data-field="base" data-id="${e.id}" value="${e.base}"></div>
+          <div><label>قناة الصرف</label><input class="cell-input" data-field="channel" data-id="${e.id}" value="${e.channel||''}" placeholder="غير مُدخل"></div>
+          <div><label>عملة الراتب</label><select class="cell-input" data-field="cur" data-id="${e.id}">${CURRENCY_OPTIONS.map(o=>`<option value="${o}" ${o===e.cur?'selected':''}>${o}</option>`).join("")}</select></div>
+          <div><label>الرقم التسلسلي القديم</label><span>${e.legacy||'—'}</span></div>
+          <div><label>عمولات وحوافز إضافية</label><input class="cell-input" type="number" step="0.01" data-field="commission" data-id="${e.id}" value="${e.commission||0}"></div>
+          <div><label>أيام الغياب</label><input class="cell-input" type="number" step="1" data-field="absenceDays" data-id="${e.id}" value="${e.absenceDays||0}"></div>
+          <div><label>حسم الغياب (محسوب)</label><span>${e.absenceDeduction>0?money(e.absenceDeduction)+' '+e.cur:'—'}</span></div>
+          <div><label>استقطاع التأمينات (محسوب)</label><span>${gosiAmount(e,cp().gosiRate)>0?money(gosiAmount(e,cp().gosiRate))+' ريال':'—'}</span></div>
+          <div><label>صافي الراتب بعملته (بعد الجميع)</label><span>${money(finalNet(e,cp().gosiRate))} ${e.cur}</span></div>
+          <div><label>صافي الراتب بالريال</label><span>${e.cur==="ريال"?money(finalNet(e,cp().gosiRate))+" ريال":(computeSar(e,cp().rates,cp().gosiRate)!==null?"≈ "+money(computeSar(e,cp().rates,cp().gosiRate))+" ريال":"بانتظار سعر الصرف")}</span></div>
+          <div><label>رصيد سلفة موروث</label><input class="cell-input" type="number" step="0.01" data-field="advBalance" data-id="${e.id}" value="${e.advBalance}"></div>
+          <div><label>تأكيد استلام الراتب</label><span>${e.receivedConfirmed?'✅ '+money(e.receivedAmount)+' '+e.cur+' ('+(receivedRatio(e)!==null?receivedRatio(e).toFixed(1)+'% من الأساسي':'')+') بتاريخ '+e.receivedAt:'⏳ لم يؤكَّد بعد — يؤكَّده الموظف من حسابه'}</span></div>
+        </div>
+        ${flags.length? '<div style="margin-top:10px">'+flags.map(f=>`<div class="flag" style="color:${f.level==='error'?'#DC2626':f.level==='warning'?'#D97706':'#10B981'}">• ${f.text}</div>`).join('')+'</div>' : ''}
+      </div>
+    </div>
+  `;}).join("");
+  return `<div class="toolbar">
+    <input type="search" id="emp-search" placeholder="بحث بالاسم أو الموقع..." value="${empFilter}">
+    <button type="button" class="small-btn" id="add-employee-btn">+ إضافة موظف</button>
+  </div>${emptyState}${cards}`;
+}
+
+function renderAdvances(){
+  const list = cp().employees.filter(e => e.advBalance>0 || e.advThisMonth>0);
+  const rows = list.map(e => `<tr data-id="${e.id}">
+    <td>${e.name}</td>
+    <td><input class="cell-input" type="number" step="0.01" data-field="advBalance" value="${e.advBalance}"></td>
+    <td><input class="cell-input" type="number" step="0.01" data-field="advThisMonth" value="${e.advThisMonth}"></td>
+    <td style="font-weight:700">${money(Math.max(0,e.advBalance-e.advThisMonth))}</td>
+    <td style="font-size:12px;color:#D97706">بانتظار مطابقة مع سجل السلف الأصلي</td></tr>`).join("");
+  return `
+  <div class="note" style="margin-bottom:8px">عدّل الرصيد الموروث أو قسط هذا الشهر مباشرة هنا. لإضافة سلفة لموظف لا يظهر في هذه القائمة (رصيده صفر حاليًا)، عدّل رصيده من بطاقته في تبويب "الموظفون".</div>
+  <table class="tbl"><thead><tr><th>الموظف</th><th>الرصيد الموروث (قابل للتعديل)</th><th>القسط هذا الشهر (قابل للتعديل)</th><th>الرصيد المتوقع بعد الخصم</th><th>ملاحظة</th></tr></thead><tbody>${rows||'<tr><td colspan=5 style="text-align:center;padding:16px;color:#888">لا توجد سلف</td></tr>'}</tbody></table>`;
+}
+
+function renderExceptions(){
+  const list = cp().employees.map(e => ({e, flags: flagsFor(e)})).filter(x => x.flags.length>0);
+  const cards = list.map(({e,flags}) => `
+    <div class="panel">
+      <div style="font-weight:700;margin-bottom:6px">${e.name} <span style="font-weight:400;color:#888;font-size:12px">(${e.id})</span></div>
+      ${flags.map(f=>`<div class="flag" style="color:${f.level==='error'?'#DC2626':f.level==='warning'?'#D97706':'#10B981'}">• ${f.text}</div>`).join('')}
+    </div>
+  `).join("");
+  return cards || '<div style="color:#888">لا توجد استثناءات</div>';
+}
+
+function renderEditLog(){
+  const log = cp().editLog;
+  if (!log.length) return '<div style="color:#888">لم تُجرَ أي تعديلات في فترة "'+cp().label+'" بعد.</div>';
+  const rows = log.slice().reverse().map((l,i) => `<tr>
+    <td>${l.time}</td><td>${l.by||"—"}</td><td>${l.emp}</td><td>${FIELD_LABELS[l.field]||l.field}</td>
+    <td>${l.oldVal}</td><td style="font-weight:700">${l.newVal}</td>
+  </tr>`).join("");
+  return `
+  <div class="toolbar"><button class="small-btn" id="undo-btn">تراجع عن آخر تعديل</button></div>
+  <table class="tbl"><thead><tr><th>الوقت</th><th>بواسطة</th><th>الموظف</th><th>الحقل</th><th>القيمة السابقة</th><th>القيمة الجديدة</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function nextEmployeeId(){
+  let maxNum = 0;
+  Object.values(PERIODS).forEach(p => p.employees.forEach(e => {
+    const m = /^TRV-(\d+)$/.exec(e.id);
+    if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+  }));
+  return "TRV-" + String(maxNum + 1).padStart(4, "0");
+}
+
+function addEmployee(){
+  const name = prompt("اسم الموظف الجديد:");
+  if (!name || !name.trim()) return;
+  const newEmp = {
+    id: nextEmployeeId(), legacy: null, name: name.trim(), loc: "", cur: "ريال", nationality: "غير محدد",
+    base: 0, extra1: 0, extra2: 0, bank: 0, commission: 0, absenceDays: 0, channel: "", advBalance: 0, advThisMonth: 0,
+    notes: null, jobTitle: "", dupLegacy: false, receivedConfirmed: false, receivedAmount: null, receivedAt: null
+  };
+  recompute(newEmp);
+  cp().employees.push(newEmp);
+  cp().editLog.push({emp: newEmp.name, id: newEmp.id, field: "إضافة موظف", oldVal: "-", newVal: "أُضيف إلى فترة " + cp().label, by: currentUser?currentUser.name:(cloudSession?cloudSession.user.email:"غير معروف"), time: new Date().toLocaleTimeString("ar-SA")});
+  render();
+  toast('تمت إضافة "' + newEmp.name + '" — أكمل بياناته (الراتب، القناة، العملة...) من بطاقته');
+  setTimeout(() => {
+    const body = document.getElementById("body-" + newEmp.id);
+    if (body) body.classList.add("open");
+  }, 50);
+}
+
+function removeEmployee(id){
+  const emp = cp().employees.find(e => e.id === id);
+  if (!emp) return;
+  if (!confirm('حذف "' + emp.name + '" نهائيًا من فترة "' + cp().label + '"؟ يمكن التراجع عن هذا فورًا من تبويب "سجل التعديلات" طالما لم تُجرِ تعديلات أخرى بعده.')) return;
+  cp().employees = cp().employees.filter(e => e.id !== id);
+  cp().editLog.push({emp: emp.name, id: emp.id, field: "حذف موظف", oldVal: "موجود", newVal: "محذوف من " + cp().label, snapshot: JSON.parse(JSON.stringify(emp)), by: currentUser?currentUser.name:(cloudSession?cloudSession.user.email:"غير معروف"), time: new Date().toLocaleTimeString("ar-SA")});
+  render();
+  toast('تم حذف "' + emp.name + '" من هذه الفترة');
+}
+
+function isEdited(e, field){
+  const orig = PERIODS[currentKey]._original ? PERIODS[currentKey]._original.find(o=>o.id===e.id) : null;
+  return orig ? orig[field] !== e[field] : false;
+}
+function anyEdited(e){
+  return ["base","bank","advThisMonth","advBalance","channel","name","jobTitle","cur","loc","nationality","commission","absenceDays"].some(f => isEdited(e, f));
+}
+
+function render(){
+  renderPeriodBar();
+  renderNav();
+  const main = document.getElementById("main");
+  if (activeTab==="dashboard") main.innerHTML = renderDashboard();
+  else if (activeTab==="quickreport") main.innerHTML = renderQuickReport();
+  else if (activeTab==="payroll") main.innerHTML = renderPayroll();
+  else if (activeTab==="employees") main.innerHTML = renderEmployees();
+  else if (activeTab==="advances") main.innerHTML = renderAdvances();
+  else if (activeTab==="exceptions") main.innerHTML = renderExceptions();
+  else if (activeTab==="editlog") main.innerHTML = renderEditLog();
+  else if (activeTab==="mypayslip") main.innerHTML = renderMyPayslip();
+  else if (activeTab==="users") main.innerHTML = renderUsers();
+  const role = roleObj();
+  document.getElementById("export-xlsx-btn").style.display = role.canExport ? "inline-block" : "none";
+  document.getElementById("export-csv-btn").style.display = role.canExport ? "inline-block" : "none";
+  document.getElementById("export-pdf-btn").style.display = (currentRole && currentRole!=="employee") ? "inline-block" : "none";
+  ["export-finance-btn","export-finance-pdf-btn","export-hr-btn","export-hr-pdf-btn","export-signature-sheet-btn"].forEach(id => {
+    document.getElementById(id).style.display = (currentRole && currentRole!=="employee") ? "flex" : "none";
+  });
+  document.getElementById("reset-btn").style.display = role.canEdit ? "inline-block" : "none";
+  attachHandlers();
+  updateIdbIndicator();
+  if (currentRole) scheduleIdbSave();
+}
+
+function maskPassword(p){ return p.slice(0,2) + "•".repeat(Math.max(0,p.length-2)); }
+
+function renderUsers(){
+  if (SERVER_ENABLED && cloudSession){
+    return `<div class="panel">إدارة المستخدمين في وضع الخادم السحابي تتم من لوحة تحكم Supabase مباشرة (Authentication) وليس من هنا — راجع الدليل المرفق.</div>`;
+  }
+  const rows = USERS.map((u,i) => `
+    <tr>
+      <td>${u.username}</td><td>${u.name}</td><td>${ROLES[u.role]?ROLES[u.role].label:u.role}</td>
+      <td>${u.employeeName||"—"}</td><td style="font-family:monospace">${maskPassword(u.password)}</td>
+      <td>${currentUser && u.username===currentUser.username?'<span class="note" style="margin:0">أنت الآن</span>':`<button type="button" class="small-btn" data-del-user="${u.username}">حذف</button>`}</td>
+    </tr>`).join("");
+  const roleOptions = Object.entries(ROLES).map(([k,r]) => `<option value="${k}">${r.label}</option>`).join("");
+  return `
+  <div class="panel">
+    <div style="font-weight:700;margin-bottom:10px">إضافة مستخدم جديد</div>
+    <div class="field-grid" style="grid-template-columns:repeat(5,1fr);gap:10px">
+      <div><label>اسم المستخدم</label><input class="cell-input" id="nu-username" placeholder="مثال: hr2"></div>
+      <div><label>الاسم الكامل</label><input class="cell-input" id="nu-name" placeholder="اسم الشخص"></div>
+      <div><label>الدور</label><select class="cell-input" id="nu-role">${roleOptions}</select></div>
+      <div><label>كلمة المرور</label><input class="cell-input" id="nu-password" placeholder="كلمة مرور قوية"></div>
+      <div><label>اسم الموظف (إن كان الدور "الموظف")</label><input class="cell-input" id="nu-employee" placeholder="مطابق تمامًا لاسمه في المسير"></div>
+    </div>
+    <button type="button" class="small-btn" id="add-user-btn" style="margin-top:12px">+ إضافة المستخدم</button>
+    <div class="note">هذه الحسابات تُحفظ في ذاكرة الجلسة الحالية فقط (تُفقد عند إعادة تحميل الصفحة) — لأن هذا وضع محلي تجريبي. للاستمرارية الحقيقية، فعّل الاتصال بالخادم السحابي الموضّح في الدليل المرفق.</div>
+  </div>
+  <table class="tbl"><thead><tr><th>اسم المستخدم</th><th>الاسم</th><th>الدور</th><th>مرتبط بالموظف</th><th>كلمة المرور</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+  `;
+}
+
+
+function renderMyPayslip(){
+  const emp = cp().employees.find(e => e.id === loggedInEmployeeId);
+  if (!emp) return `<div class="panel">تعذّر إيجاد سجلك في فترة "${cp().label}" الحالية — قد تكون لم تُضَف بعد لهذه الفترة.</div>`;
+  const gosiRate = cp().gosiRate;
+  const gosi = gosiAmount(emp, gosiRate);
+  const net = finalNet(emp, gosiRate);
+  const sar = computeSar(emp, cp().rates, gosiRate);
+  const row = (label, val) => `<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #eee;font-size:14px"><span style="color:#666">${label}</span><span style="font-weight:700">${val}</span></div>`;
+  return `
+  <div class="panel" style="max-width:520px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-weight:700;font-size:17px">${emp.name}</div>
+      <div style="color:#888;font-size:12.5px">${emp.jobTitle||'—'} · ${emp.loc} · فترة ${cp().label}</div>
+    </div>
+    ${row("الراتب الأساسي", money(emp.base)+" "+emp.cur)}
+    ${row("تحويل بنكي إضافي", money(emp.bank)+" "+emp.cur)}
+    ${row("عمولات وحوافز", money(emp.commission||0)+" "+emp.cur)}
+    ${row("إجمالي المستحق", money(emp.gross)+" "+emp.cur)}
+    ${row("حسم الغياب ("+(emp.absenceDays||0)+" يوم)", "− "+money(emp.absenceDeduction||0)+" "+emp.cur)}
+    ${row("قسط السلفة هذا الشهر", "− "+money(emp.advThisMonth)+" "+emp.cur)}
+    ${gosi>0 ? row("استقطاع التأمينات", "− "+money(gosi)+" ريال") : ""}
+    ${row("صافي الراتب", money(net)+" "+emp.cur)}
+    ${emp.cur!=="ريال" ? row("المقابل بالريال", sar!==null?("≈ "+money(sar)+" ريال"):"بانتظار سعر الصرف") : ""}
+    ${row("قناة الصرف", emp.channel||"—")}
+    ${emp.advBalance>0 ? row("رصيد سلفتك المتبقي", money(Math.max(0,emp.advBalance-emp.advThisMonth))+" ريال") : ""}
+    <div class="panel" style="margin-top:16px;background:#F9FAFB">
+      <div style="font-weight:700;margin-bottom:10px">تأكيد استلام الراتب</div>
+      ${emp.receivedConfirmed ? `
+        <div style="color:#059669;font-size:13px;margin-bottom:6px">✅ أكّدتَ استلام <strong>${money(emp.receivedAmount)} ${emp.cur}</strong>${receivedRatio(emp)!==null?' ('+receivedRatio(emp).toFixed(1)+'% من راتبك الأساسي)':''} بتاريخ ${emp.receivedAt||''}</div>
+        <button type="button" class="btn btn-ghost" id="undo-receive-btn" style="font-size:11.5px">تراجع عن التأكيد</button>
+      ` : `
+        <div class="note" style="margin:0 0 10px">إن كنت استلمت راتب هذه الفترة فعليًا (نقدًا أو تحويلًا)، أكّد ذلك هنا. إذا اختلف المبلغ الذي استلمته فعليًا عن الصافي المحسوب أعلاه، عدّله في الحقل قبل التأكيد.</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <label style="font-size:12px;color:#555">المبلغ المستلم فعليًا
+            <input class="cell-input" type="number" step="0.01" id="received-amount-input" value="${net.toFixed(2)}" style="width:140px">
+          </label>
+          <button type="button" class="btn btn-primary" id="confirm-receive-btn">تأكيد الاستلام</button>
+        </div>
+      `}
+    </div>
+    <div class="note" style="margin-top:16px;text-align:center">هذا كشف عرض فقط — لأي اعتراض أو استفسار يُرجى التواصل مع الموارد البشرية.</div>
+  </div>`;
+}
+
+function applyEdit(id, field, rawVal){
+  const emp = cp().employees.find(e => e.id === id);
+  if (!emp) return;
+  const NUMERIC_FIELDS = ["base","bank","advThisMonth","advBalance","commission","absenceDays"];
+  const RECOMPUTE_FIELDS = ["base","bank","advThisMonth","commission","absenceDays"];
+  const isNumeric = NUMERIC_FIELDS.includes(field);
+  const newVal = isNumeric ? (parseFloat(rawVal)||0) : rawVal;
+  const oldVal = emp[field];
+  if (oldVal === newVal) return;
+  emp[field] = newVal;
+  if (RECOMPUTE_FIELDS.includes(field)) recompute(emp);
+  logEdit(emp, field, oldVal, newVal);
+  render();
+}
+
+function attachHandlers(){
+  const canEdit = roleObj().canEdit;
+  const canEditSettings = roleObj().canEditSettings;
+  if (!canEdit){
+    document.querySelectorAll("#main input.cell-input, #main select.cell-input").forEach(el => el.disabled = true);
+    document.querySelectorAll("#add-employee-btn, [data-remove]").forEach(el => el.style.display = "none");
+  }
+  if (!canEditSettings){
+    ["rate-egp","rate-myr","rate-usd","gosi-rate"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = true;
+    });
+    document.querySelectorAll("button[data-apply]").forEach(b => b.disabled = true);
+  }
+  if (!canEdit && activeTab === "payroll"){
+    const banner = document.createElement("div");
+    banner.className = "readonly-banner";
+    banner.textContent = "🔒 دورك الحالي للاطلاع فقط — لا يمكنك تعديل هذا الجدول.";
+    document.getElementById("main").prepend(banner);
+  }
+  if (activeTab==="quickreport"){
+    document.querySelectorAll("input[data-qid]").forEach(inp => {
+      inp.addEventListener("change", ev => {
+        const val = parseFloat(ev.target.value) || 0;
+        setQuickDed(ev.target.dataset.qid, val);
+        render();
+      });
+    });
+    const xlBtn = document.getElementById("quick-export-excel-btn");
+    if (xlBtn) xlBtn.onclick = () => {
+      if (typeof XLSX === "undefined"){ alert("تعذّر تحميل مكتبة Excel."); return; }
+      const headers = ["الموظف","الراتب الأساسي","خصم تقديري","الصافي التقريبي"];
+      const rows = cp().employees.map(e => [e.name, e.base, quickDed(e.id), Math.max(0, e.base - quickDed(e.id))]);
+      const title = "تقرير سريع مبدئي (غير نهائي) — فترة " + cp().label;
+      if (exportWorkbook(headers, rows, title, "تقرير_سريع_" + currentKey + ".xlsx", false)) toast("تم تنزيل التقرير السريع");
+    };
+    const pdfBtn = document.getElementById("quick-export-pdf-btn");
+    if (pdfBtn) pdfBtn.onclick = () => {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("ar-SA", {year:"numeric", month:"long", day:"numeric"});
+      const trs = cp().employees.map(e => {
+        const net = Math.max(0, e.base - quickDed(e.id));
+        return `<tr><td>${e.name}</td><td>${money(e.base)} ${e.cur}</td><td>${money(quickDed(e.id))}</td><td>${money(net)} ${e.cur}</td></tr>`;
+      }).join("");
+      const printHtml = `
+      <div class="pdf-page">
+        <div class="pdf-header">
+          <div>
+            <img src="data:image/png;base64,${LOGO_B64}" alt="ترافليون" style="height:38px;display:block;margin-bottom:6px">
+            <div class="pdf-sub">تقرير سريع مبدئي (غير نهائي) — فترة ${cp().label}</div>
+          </div>
+          <div class="pdf-meta"><div>تاريخ الإصدار: ${dateStr}</div></div>
+        </div>
+        <table class="pdf-table"><thead><tr><th>الموظف</th><th>الراتب الأساسي</th><th>خصم تقديري</th><th>الصافي التقريبي</th></tr></thead><tbody>${trs}</tbody></table>
+        <div class="pdf-footer">تقرير تقديري غير معتمد — ترافليون · ${cp().label}</div>
+      </div>`;
+      const container = document.createElement("div");
+      container.id = "pdf-print-area";
+      container.innerHTML = printHtml;
+      document.body.appendChild(container);
+      document.body.classList.add("printing-pdf");
+      setTimeout(() => { window.print(); document.body.classList.remove("printing-pdf"); container.remove(); }, 150);
+    };
+  }
+  if (activeTab==="advances"){
+    document.querySelectorAll("td input.cell-input").forEach(inp => {
+      inp.addEventListener("change", ev => {
+        const tr = ev.target.closest("tr");
+        applyEdit(tr.dataset.id, ev.target.dataset.field, ev.target.value);
+      });
+    });
+  }
+  if (activeTab==="payroll"){
+    const gosiInput = document.getElementById("gosi-rate");
+    if (gosiInput){ gosiInput.value = cp().gosiRate||""; gosiInput.onchange = e => { cp().gosiRate = parseFloat(e.target.value)||null; render(); }; }
+    const egp = document.getElementById("rate-egp"), myr = document.getElementById("rate-myr"), usd = document.getElementById("rate-usd");
+    if (egp){ egp.value = cp().rates["جنيه مصري"]||""; egp.onchange = e => { cp().rates["جنيه مصري"]=parseFloat(e.target.value)||null; render(); }; }
+    if (myr){ myr.value = cp().rates["MYR"]||""; myr.onchange = e => { cp().rates["MYR"]=parseFloat(e.target.value)||null; render(); }; }
+    if (usd){ usd.value = cp().rates["دولار"]||""; usd.onchange = e => { cp().rates["دولار"]=parseFloat(e.target.value)||null; render(); }; }
+    document.querySelectorAll("button[data-apply]").forEach(btn => btn.onclick = () => {
+      cp().rates[btn.dataset.apply] = REFERENCE_RATES[btn.dataset.apply].rate; render();
+    });
+    document.querySelectorAll("th[data-key]").forEach(th => th.onclick = () => {
+      const k = th.dataset.key;
+      if (sortKey===k) sortDir *= -1; else { sortKey=k; sortDir=1; }
+      render();
+    });
+    document.querySelectorAll("td input.cell-input, td select.cell-input").forEach(inp => {
+      inp.addEventListener("change", ev => {
+        const tr = ev.target.closest("tr");
+        applyEdit(tr.dataset.id, ev.target.dataset.field, ev.target.value);
+      });
+    });
+    const search = document.getElementById("payroll-search");
+    if (search) search.oninput = e => { payrollFilter = e.target.value; render(); };
+    document.querySelectorAll("#payroll-view-toggle button").forEach(b => b.onclick = () => {
+      payrollDense = b.dataset.dense === "1";
+      render();
+    });
+  }
+  if (activeTab==="employees"){
+    const search = document.getElementById("emp-search");
+    if (search) search.oninput = e => { empFilter = e.target.value; render(); };
+    const addBtn = document.getElementById("add-employee-btn");
+    if (addBtn) addBtn.onclick = addEmployee;
+    document.querySelectorAll("[data-remove]").forEach(btn => btn.onclick = (ev) => {
+      ev.stopPropagation();
+      removeEmployee(btn.dataset.remove);
+    });
+    document.querySelectorAll(".acc-head").forEach(h => h.onclick = (ev) => {
+      if (ev.target.tagName === "INPUT" || ev.target.tagName === "SELECT" || ev.target.tagName === "BUTTON") return;
+      document.getElementById("body-"+h.dataset.id).classList.toggle("open");
+    });
+    document.querySelectorAll(".acc-body input.cell-input, .acc-body select.cell-input").forEach(inp => {
+      inp.addEventListener("click", ev => ev.stopPropagation());
+      inp.addEventListener("change", ev => applyEdit(ev.target.dataset.id, ev.target.dataset.field, ev.target.value));
+    });
+  }
+  if (activeTab==="editlog"){
+    const undoBtn = document.getElementById("undo-btn");
+    if (undoBtn) undoBtn.onclick = () => {
+      const log = cp().editLog;
+      if (!log.length) return;
+      const last = log.pop();
+      if (last.field === "إضافة موظف"){
+        cp().employees = cp().employees.filter(e => e.id !== last.id);
+        toast('تم التراجع عن إضافة "' + last.emp + '"');
+      } else if (last.field === "حذف موظف"){
+        if (last.snapshot) cp().employees.push(last.snapshot);
+        toast('تم استرجاع "' + last.emp + '" بعد حذفه');
+      } else {
+        const emp = cp().employees.find(e => e.id === last.id);
+        if (emp){
+          emp[last.field] = last.oldVal;
+          if (["base","bank","advThisMonth","commission","absenceDays"].includes(last.field)) recompute(emp);
+        }
+        toast("تم التراجع عن آخر تعديل");
+      }
+      render();
+    };
+  }
+  if (activeTab==="mypayslip"){
+    const confirmBtn = document.getElementById("confirm-receive-btn");
+    if (confirmBtn) confirmBtn.onclick = () => {
+      const emp = cp().employees.find(e => e.id === loggedInEmployeeId);
+      if (!emp) return;
+      const amountInput = document.getElementById("received-amount-input");
+      const amount = parseFloat(amountInput.value);
+      if (isNaN(amount) || amount < 0){ toast("أدخل مبلغًا صحيحًا."); return; }
+      if (!confirm('تأكيد استلام مبلغ ' + money(amount) + ' ' + emp.cur + '؟ لا يمكن التراجع إلا من هذه الصفحة لاحقًا.')) return;
+      const now = new Date();
+      emp.receivedConfirmed = true;
+      emp.receivedAmount = amount;
+      emp.receivedAt = now.toLocaleDateString("ar-SA") + " " + now.toLocaleTimeString("ar-SA");
+      cp().editLog.push({emp: emp.name, id: emp.id, field: "تأكيد استلام الراتب", oldVal: "لم يُؤكَّد", newVal: money(amount)+" "+emp.cur+" بتاريخ "+emp.receivedAt, by: currentUser?currentUser.name:(cloudSession?cloudSession.user.email:"غير معروف"), time: now.toLocaleTimeString("ar-SA")});
+      toast("تم تأكيد استلام الراتب");
+      render();
+    };
+    const undoBtn2 = document.getElementById("undo-receive-btn");
+    if (undoBtn2) undoBtn2.onclick = () => {
+      const emp = cp().employees.find(e => e.id === loggedInEmployeeId);
+      if (!emp) return;
+      if (!confirm("التراجع عن تأكيد الاستلام؟")) return;
+      emp.receivedConfirmed = false; emp.receivedAmount = null; emp.receivedAt = null;
+      toast("تم التراجع عن التأكيد");
+      render();
+    };
+  }
+  if (activeTab==="users"){
+    const addBtn = document.getElementById("add-user-btn");
+    if (addBtn) addBtn.onclick = () => {
+      const username = document.getElementById("nu-username").value.trim();
+      const name = document.getElementById("nu-name").value.trim();
+      const role = document.getElementById("nu-role").value;
+      const password = document.getElementById("nu-password").value;
+      const employeeName = document.getElementById("nu-employee").value.trim();
+      if (!username || !name || !password){ toast("أكمل اسم المستخدم والاسم وكلمة المرور."); return; }
+      if (USERS.some(u => u.username === username)){ toast("اسم المستخدم هذا مُستخدم بالفعل."); return; }
+      if (role === "employee" && !PERIODS["2026-07"].employees.some(e => e.name === employeeName)){
+        toast('لم أجد موظفًا بالاسم "' + employeeName + '" في فترة يوليو 2026 — تأكد من مطابقة الاسم تمامًا.');
+        return;
+      }
+      const newUser = {username, name, role, password};
+      if (role === "employee") newUser.employeeName = employeeName;
+      USERS.push(newUser);
+      toast('تمت إضافة المستخدم "' + name + '"');
+      render();
+    };
+    document.querySelectorAll("[data-del-user]").forEach(btn => btn.onclick = () => {
+      const username = btn.dataset.delUser;
+      if (currentUser && username === currentUser.username){ toast("لا يمكنك حذف حسابك الحالي."); return; }
+      if (!confirm('حذف المستخدم "' + username + '" نهائيًا؟')) return;
+      USERS = USERS.filter(u => u.username !== username);
+      render();
+      toast("تم حذف المستخدم");
+    });
+  }
+}
+
+// ---------- Exports ----------
+// سجل موحّد لكل الحقول الممكنة — يُستخدم لبناء تصدير كامل أو تصدير مخصص لقسم معيّن
+function fieldRegistry(gosiRate, rates){
+  return {
+    id:         {header:"الرقم الوظيفي", get:e=>e.id},
+    legacy:     {header:"الرقم التسلسلي القديم", get:e=>e.legacy},
+    name:       {header:"اسم الموظف", get:e=>e.name},
+    jobTitle:   {header:"المسمى الوظيفي", get:e=>e.jobTitle||""},
+    nationality:{header:"الجنسية", get:e=>e.nationality||"غير محدد"},
+    loc:        {header:"الموقع", get:e=>e.loc},
+    cur:        {header:"العملة", get:e=>e.cur},
+    base:       {header:"الراتب الأساسي", get:e=>e.base},
+    bank:       {header:"تحويل بنكي إضافي", get:e=>e.bank},
+    commission: {header:"عمولات وحوافز", get:e=>e.commission||0},
+    gross:      {header:"الراتب المستحق", get:e=>e.gross},
+    absenceDays:{header:"أيام الغياب", get:e=>e.absenceDays||0},
+    absenceDeduction:{header:"حسم الغياب", get:e=>e.absenceDeduction||0},
+    advThisMonth:{header:"قسط السلفة هذا الشهر", get:e=>e.advThisMonth},
+    advBalance: {header:"رصيد السلفة الموروث", get:e=>e.advBalance},
+    gosi:       {header:"استقطاع التأمينات", get:e=>gosiAmount(e,gosiRate)},
+    net:        {header:"صافي الراتب النهائي", get:e=>finalNet(e,gosiRate)},
+    sar:        {header:"المقابل بالريال", get:e=>{const s=computeSar(e,(rates||cp().rates),gosiRate); return s!==null?s:"";}},
+    channel:    {header:"قناة الصرف", get:e=>e.channel||""},
+    receivedStatus:{header:"تأكيد الاستلام", get:e=>e.receivedConfirmed?"مؤكَّد":"لم يؤكَّد"},
+    receivedAmount:{header:"المبلغ المستلم فعليًا", get:e=>e.receivedAmount!=null?e.receivedAmount:""},
+    receivedAt: {header:"تاريخ الاستلام", get:e=>e.receivedAt||""},
+    receivedRatio: {header:"نسبة المستلم إلى الأساسي %", get:e=>{const r=receivedRatio(e); return r!==null?Math.round(r*10)/10:"";}},
+    status:     {header:"حالة السجل", get:e=>{const f=flagsFor(e); return f.some(x=>x.level==="error")?f.filter(x=>x.level==="error").map(x=>x.text).join(" / "):"جاهز";}},
+  };
+}
+
+// الأعمدة التي تخص المالية: التفاصيل المالية الكاملة وأسعار الصرف والتأمينات والاستلام
+const FINANCE_PROFILE = ["id","name","cur","base","bank","commission","gross","absenceDeduction","advThisMonth","gosi","net","sar","channel","receivedStatus","receivedAmount","receivedRatio","receivedAt","status"];
+// الأعمدة التي تخص الموارد البشرية: البيانات الشخصية والوظيفية والحضور، دون تفاصيل مالية دقيقة
+const HR_PROFILE = ["id","legacy","name","jobTitle","nationality","loc","cur","base","absenceDays","net","channel","advBalance","receivedStatus","receivedRatio","status"];
+
+function buildProfileRows(profileKeys, periodKey){
+  const p = periodKey ? PERIODS[periodKey] : cp();
+  const reg = fieldRegistry(p.gosiRate, p.rates);
+  const headers = profileKeys.map(k => reg[k].header);
+  // status (الأعلام) يعتمد على currentKey عالميًا؛ نبدّله مؤقتًا عند التصدير لفترة غير الحالية
+  const savedKey = currentKey;
+  if (periodKey) currentKey = periodKey;
+  const rows = p.employees.map(e => profileKeys.map(k => reg[k].get(e)));
+  currentKey = savedKey;
+  return {headers, rows};
+}
+
+function exportAllPeriodsExcel(profileKeys, titlePrefix, filenamePrefix){
+  if (typeof XLSX === "undefined"){
+    alert("تعذّر تحميل مكتبة تصدير Excel. جرّب لاحقًا أو تحقق من الاتصال.");
+    return false;
+  }
+  try {
+    const wb = XLSX.utils.book_new();
+    wb.Workbook = {views:[{RTL:true}]};
+    const keys = Object.keys(PERIODS).sort();
+    const usedNames = new Set();
+    keys.forEach(k => {
+      const {headers, rows} = buildProfileRows(profileKeys, k);
+      const {ws} = buildStyledSheet(headers, rows, titlePrefix + " — " + PERIODS[k].label);
+      let sheetName = PERIODS[k].label.replace(/[\\\/\?\*\[\]:]/g, "").slice(0,31) || k;
+      let suffix = 1;
+      while (usedNames.has(sheetName)){ sheetName = (PERIODS[k].label.slice(0,28) + "_" + (++suffix)); }
+      usedNames.add(sheetName);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    });
+    XLSX.writeFile(wb, filenamePrefix + "_كل_الفترات.xlsx", {cellStyles:true});
+    return true;
+  } catch(err){
+    alert("حدث خطأ أثناء إنشاء ملف كل الفترات.");
+    console.error(err);
+    return false;
+  }
+}
+
+function exportAllPeriodsPDF(profileKeys, reportTitle){
+  const keys = Object.keys(PERIODS).sort();
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("ar-SA", {year:"numeric", month:"long", day:"numeric"});
+  const pages = keys.map(k => {
+    const {headers, rows} = buildProfileRows(profileKeys, k);
+    const thead = headers.map(h => `<th>${h}</th>`).join("");
+    const trs = rows.map(row => `<tr>${row.map(v => `<td>${v===""||v==null?"—":(typeof v==="number"?money(v):v)}</td>`).join("")}</tr>`).join("");
+    return `
+    <div class="pdf-page">
+      <div class="pdf-header">
+        <div>
+          <img src="data:image/png;base64,${LOGO_B64}" alt="ترافليون" style="height:38px;display:block;margin-bottom:6px">
+          <div class="pdf-sub">${reportTitle} — فترة ${PERIODS[k].label}</div>
+        </div>
+        <div class="pdf-meta">
+          <div>تاريخ الإصدار: ${dateStr}</div>
+          <div>عدد الموظفين: ${rows.length}</div>
+        </div>
+      </div>
+      <table class="pdf-table"><thead><tr>${thead}</tr></thead><tbody>${trs}</tbody></table>
+      <div class="pdf-footer">مستند مُنشأ آليًا من نموذج تطبيقي — ترافليون · ${PERIODS[k].label}</div>
+    </div>`;
+  }).join("");
+  const container = document.createElement("div");
+  container.id = "pdf-print-area";
+  container.innerHTML = pages;
+  document.body.appendChild(container);
+  document.body.classList.add("printing-pdf");
+  setTimeout(() => {
+    window.print();
+    document.body.classList.remove("printing-pdf");
+    container.remove();
+  }, 150);
+}
+
+function buildExportRows(){
+  const headers = ["الرقم الوظيفي","الرقم التسلسلي القديم","اسم الموظف","المسمى الوظيفي","الجنسية","الموقع","العملة","الراتب الأساسي","تحويل بنكي إضافي","عمولات وحوافز","الراتب المستحق","أيام الغياب","حسم الغياب","قسط السلفة","استقطاع التأمينات","صافي الراتب النهائي","المقابل بالريال","قناة الصرف","تأكيد الاستلام","المبلغ المستلم فعليًا","نسبة المستلم إلى الأساسي %","تاريخ الاستلام","حالة السجل"];
+  const gosiRate = cp().gosiRate;
+  const rows = cp().employees.map(e => {
+    const flags = flagsFor(e);
+    const status = flags.some(f=>f.level==="error") ? flags.filter(f=>f.level==="error").map(f=>f.text).join(" / ") : "جاهز";
+    const sar = computeSar(e, cp().rates, gosiRate);
+    const ratio = receivedRatio(e);
+    return [e.id, e.legacy, e.name, e.jobTitle||"", e.nationality||"غير محدد", e.loc, e.cur, e.base, e.bank, e.commission||0, e.gross, e.absenceDays||0, e.absenceDeduction||0, e.advThisMonth, gosiAmount(e,gosiRate), finalNet(e,gosiRate), sar!==null?sar:"", e.channel||"", e.receivedConfirmed?"مؤكَّد":"لم يؤكَّد", e.receivedAmount!=null?e.receivedAmount:"", ratio!==null?Math.round(ratio*10)/10:"", e.receivedAt||"", status];
+  });
+  return {headers, rows};
+}
+
+function buildStyledSheet(headers, rows, titleText){
+  const moneyFmt = "#,##0.00";
+  const HEADER_FILL = "0F3D2E";
+  const ALT_FILL = "F2F0E6";
+  const title = [titleText];
+  const subtitle = ["تاريخ التصدير: " + new Date().toLocaleDateString("ar-SA", {year:"numeric",month:"long",day:"numeric"}) + "   |   عدد الموظفين: " + rows.length];
+  const aoa = [title, subtitle, [], headers, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  ws["!merges"] = [
+    {s:{r:0,c:0}, e:{r:0,c:headers.length-1}},
+    {s:{r:1,c:0}, e:{r:1,c:headers.length-1}},
+  ];
+  ws["!cols"] = headers.map((h,i) => {
+    if (h === "اسم الموظف") return {wch: 22};
+    if (h === "المسمى الوظيفي" || h === "قناة الصرف") return {wch: 20};
+    if (h === "حالة السجل") return {wch: 42};
+    if (h === "الرقم الوظيفي") return {wch: 12};
+    return {wch: 15};
+  });
+  ws["!rows"] = [{hpt:22},{hpt:16},{hpt:6},{hpt:20}];
+
+  const titleStyle = {font:{bold:true, sz:14, color:{rgb:"0F3D2E"}}, alignment:{horizontal:"right"}};
+  const subStyle = {font:{sz:10, italic:true, color:{rgb:"666666"}}, alignment:{horizontal:"right"}};
+  const headerStyle = {font:{bold:true, color:{rgb:"FFFFFF"}}, fill:{fgColor:{rgb:HEADER_FILL}}, alignment:{horizontal:"center", vertical:"center"}, border:{bottom:{style:"thin",color:{rgb:"000000"}}}};
+
+  if (ws["A1"]) ws["A1"].s = titleStyle;
+  if (ws["A2"]) ws["A2"].s = subStyle;
+  const headerRowIdx = 3;
+  headers.forEach((h,c) => {
+    const addr = XLSX.utils.encode_cell({r:headerRowIdx, c});
+    if (ws[addr]) ws[addr].s = headerStyle;
+  });
+  rows.forEach((row, r) => {
+    const rowIdx = headerRowIdx + 1 + r;
+    row.forEach((val, c) => {
+      const addr = XLSX.utils.encode_cell({r:rowIdx, c});
+      if (!ws[addr]) return;
+      const style = {};
+      if (typeof val === "number"){ ws[addr].z = moneyFmt; }
+      if (r % 2 === 1) style.fill = {fgColor:{rgb:ALT_FILL}};
+      const lastCol = headers[c] === "حالة السجل";
+      if (lastCol && val && val !== "جاهز") style.font = {color:{rgb:"B23A3A"}, bold:true};
+      if (Object.keys(style).length) ws[addr].s = {...(ws[addr].s||{}), ...style};
+    });
+  });
+  return {ws, headerStyle};
+}
+
+function exportWorkbook(headers, rows, titleText, filename, includeEditLog){
+  if (typeof XLSX === "undefined"){
+    alert("تعذّر تحميل مكتبة تصدير Excel (قد تكون الشبكة تمنع الوصول لمكتبات خارجية). جرّب زر \"تصدير CSV لجوجل شيتس\" كبديل، فهو لا يحتاج أي مكتبة خارجية.");
+    return false;
+  }
+  try {
+    const {ws, headerStyle} = buildStyledSheet(headers, rows, titleText);
+    const wb = XLSX.utils.book_new();
+    wb.Workbook = {views:[{RTL:true}]};
+    XLSX.utils.book_append_sheet(wb, ws, "البيانات");
+
+    if (includeEditLog && cp().editLog.length){
+      const logHeaders = ["الوقت","بواسطة","الموظف","الحقل","القيمة السابقة","القيمة الجديدة"];
+      const logRows = cp().editLog.map(l => [l.time, l.by||"—", l.emp, FIELD_LABELS[l.field]||l.field, l.oldVal, l.newVal]);
+      const ws2 = XLSX.utils.aoa_to_sheet([logHeaders, ...logRows]);
+      ws2["!cols"] = logHeaders.map(() => ({wch: 20}));
+      logHeaders.forEach((h,c) => {
+        const addr = XLSX.utils.encode_cell({r:0, c});
+        if (ws2[addr]) ws2[addr].s = headerStyle;
+      });
+      XLSX.utils.book_append_sheet(wb, ws2, "سجل التعديلات");
+    }
+    XLSX.writeFile(wb, filename, {cellStyles:true});
+    return true;
+  } catch(err){
+    alert("حدث خطأ أثناء إنشاء ملف Excel. جرّب زر \"تصدير CSV لجوجل شيتس\" كبديل.");
+    console.error(err);
+    return false;
+  }
+}
+
+document.getElementById("export-xlsx-btn").onclick = () => {
+  const {headers, rows} = buildExportRows();
+  const title = "مسير الرواتب — شركة ترافليون — فترة " + cp().label;
+  if (exportWorkbook(headers, rows, title, "مسير_الرواتب_" + currentKey + ".xlsx", true)){
+    toast("تم تنزيل ملف Excel لفترة " + cp().label);
+  }
+};
+
+function allPeriodsRequested(){
+  const cb = document.getElementById("export-all-periods-toggle");
+  return cb && cb.checked;
+}
+
+document.getElementById("export-finance-btn").onclick = () => {
+  if (allPeriodsRequested()){
+    if (exportAllPeriodsExcel(FINANCE_PROFILE, "نسخة المالية", "نسخة_المالية")) toast("تم تنزيل نسخة المالية لكل الفترات (ورقة لكل شهر)");
+    return;
+  }
+  const {headers, rows} = buildProfileRows(FINANCE_PROFILE);
+  const title = "نسخة المالية — مسير الرواتب — شركة ترافليون — فترة " + cp().label;
+  if (exportWorkbook(headers, rows, title, "نسخة_المالية_" + currentKey + ".xlsx", false)){
+    toast("تم تنزيل نسخة المالية لفترة " + cp().label);
+  }
+};
+
+document.getElementById("export-hr-btn").onclick = () => {
+  if (allPeriodsRequested()){
+    if (exportAllPeriodsExcel(HR_PROFILE, "نسخة الموارد البشرية", "نسخة_الموارد_البشرية")) toast("تم تنزيل نسخة الموارد البشرية لكل الفترات (ورقة لكل شهر)");
+    return;
+  }
+  const {headers, rows} = buildProfileRows(HR_PROFILE);
+  const title = "نسخة الموارد البشرية — مسير الرواتب — شركة ترافليون — فترة " + cp().label;
+  if (exportWorkbook(headers, rows, title, "نسخة_الموارد_البشرية_" + currentKey + ".xlsx", false)){
+    toast("تم تنزيل نسخة الموارد البشرية لفترة " + cp().label);
+  }
+};
+
+document.getElementById("export-csv-btn").onclick = () => {
+  const {headers, rows} = buildExportRows();
+  const esc = v => { const s = (v===null||v===undefined)?"":String(v); return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; };
+  const lines = [headers, ...rows].map(r => r.map(esc).join(","));
+  const csv = "\uFEFF" + lines.join("\r\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = "مسير_الرواتب_"+currentKey+"_لجوجل_شيتس.csv"; a.click();
+  URL.revokeObjectURL(url);
+  toast("تم تنزيل CSV — ارفعه إلى Google Drive وافتحه بـ Google Sheets");
+};
+
+// كشف استلام ورقي — منفصل تمامًا عن تأكيد الاستلام الإلكتروني داخل النظام (الذي يبقى خاصًا بحساب كل موظف)
+// الغرض: طباعته والحصول على توقيع يدوي فعلي من الموظف، خصوصًا لمن يُصرف له نقدًا أو لا يملك حساب دخول للنظام
+function exportSignatureSheetPDF(){
+  const gosiRate = cp().gosiRate;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("ar-SA", {year:"numeric", month:"long", day:"numeric"});
+  const rows = cp().employees.map((e, i) => {
+    const net = finalNet(e, gosiRate);
+    const digitalStatus = e.receivedConfirmed
+      ? `<span style="color:#059669;font-weight:700">✅ مؤكَّد إلكترونيًا</span>`
+      : `<span style="color:#9CA3AF">لم يُؤكَّد إلكترونيًا</span>`;
+    return `<tr>
+      <td>${i+1}</td>
+      <td style="font-weight:700">${e.name}</td>
+      <td>${e.id}</td>
+      <td>${money(net)} ${e.cur}</td>
+      <td>${e.channel||"—"}</td>
+      <td>${digitalStatus}</td>
+      <td style="min-width:120px;border-bottom:1px solid #999"></td>
+      <td style="min-width:90px;border-bottom:1px solid #999"></td>
+    </tr>`;
+  }).join("");
+  const printHtml = `
+  <div class="pdf-page">
+    <div class="pdf-header">
+      <div>
+        <img src="data:image/png;base64,${LOGO_B64}" alt="ترافليون" style="height:38px;display:block;margin-bottom:6px">
+        <div class="pdf-sub">كشف استلام الرواتب (توقيع يدوي) — فترة ${cp().label}</div>
+      </div>
+      <div class="pdf-meta">
+        <div>تاريخ الطباعة: ${dateStr}</div>
+        <div>عدد الموظفين: ${cp().employees.length}</div>
+      </div>
+    </div>
+    <table class="pdf-table">
+      <thead><tr><th>م</th><th>اسم الموظف</th><th>الرقم الوظيفي</th><th>صافي الراتب</th><th>قناة الصرف</th><th>حالة التأكيد الإلكتروني</th><th>توقيع الموظف</th><th>التاريخ</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="note" style="margin-top:14px">
+      هذا الكشف مخصّص للتوقيع اليدوي الفعلي من الموظف عند استلام راتبه (خصوصًا الصرف النقدي)، كإثبات استلام ورقي مستقل تمامًا عن التأكيد الإلكتروني داخل النظام. وجود توقيع يدوي هنا لا يُغني عن التأكيد الإلكتروني ولا العكس — كلاهما سجلّ مستقل للتدقيق.
+    </div>
+    <div class="pdf-footer">مستند مُنشأ آليًا من نموذج تطبيقي — ترافليون · ${cp().label}</div>
+  </div>`;
+  const container = document.createElement("div");
+  container.id = "pdf-print-area";
+  container.innerHTML = printHtml;
+  document.body.appendChild(container);
+  document.body.classList.add("printing-pdf");
+  setTimeout(() => {
+    window.print();
+    document.body.classList.remove("printing-pdf");
+    container.remove();
+  }, 150);
+}
+document.getElementById("export-signature-sheet-btn").onclick = exportSignatureSheetPDF;
+
+function exportProfilePDF(profileKeys, reportTitle){
+  const {headers, rows} = buildProfileRows(profileKeys);
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("ar-SA", {year:"numeric", month:"long", day:"numeric"});
+  const thead = headers.map(h => `<th>${h}</th>`).join("");
+  const trs = rows.map(row => `<tr>${row.map(v => `<td>${v===""||v==null?"—":(typeof v==="number"?money(v):v)}</td>`).join("")}</tr>`).join("");
+  const printHtml = `
+  <div class="pdf-page">
+    <div class="pdf-header">
+      <div>
+        <img src="data:image/png;base64,${LOGO_B64}" alt="ترافليون" style="height:38px;display:block;margin-bottom:6px">
+        <div class="pdf-sub">${reportTitle} — فترة ${cp().label}</div>
+      </div>
+      <div class="pdf-meta">
+        <div>تاريخ الإصدار: ${dateStr}</div>
+        <div>عدد الموظفين: ${rows.length}</div>
+        <div>الدور: ${roleObj().label || currentRole}</div>
+      </div>
+    </div>
+    <table class="pdf-table"><thead><tr>${thead}</tr></thead><tbody>${trs}</tbody></table>
+    <div class="pdf-footer">مستند مُنشأ آليًا من نموذج تطبيقي — ترافليون · ${cp().label}</div>
+  </div>`;
+  const container = document.createElement("div");
+  container.id = "pdf-print-area";
+  container.innerHTML = printHtml;
+  document.body.appendChild(container);
+  document.body.classList.add("printing-pdf");
+  setTimeout(() => {
+    window.print();
+    document.body.classList.remove("printing-pdf");
+    container.remove();
+  }, 150);
+}
+
+document.getElementById("export-finance-pdf-btn").onclick = () => {
+  if (allPeriodsRequested()) exportAllPeriodsPDF(FINANCE_PROFILE, "نسخة المالية — مسير الرواتب");
+  else exportProfilePDF(FINANCE_PROFILE, "نسخة المالية — مسير الرواتب");
+};
+document.getElementById("export-hr-pdf-btn").onclick = () => {
+  if (allPeriodsRequested()) exportAllPeriodsPDF(HR_PROFILE, "نسخة الموارد البشرية — مسير الرواتب");
+  else exportProfilePDF(HR_PROFILE, "نسخة الموارد البشرية — مسير الرواتب");
+};
+
+document.getElementById("export-pdf-btn").onclick = () => {
+  const gosiRate = cp().gosiRate;
+  const rows = cp().employees.map(e => {
+    const flags = flagsFor(e);
+    const hasErr = flags.some(f=>f.level==="error");
+    const sar = computeSar(e, cp().rates, gosiRate);
+    return {e, net: finalNet(e, gosiRate), gosi: gosiAmount(e, gosiRate), sar, hasErr};
+  });
+  let sarTotal = 0, sarUnknown = false;
+  rows.forEach(r => { if (r.sar!==null) sarTotal += r.sar; else sarUnknown = true; });
+  const errCount = rows.filter(r=>r.hasErr).length;
+
+  const trs = rows.map(({e, net, gosi, sar, hasErr}) => `
+    <tr class="${hasErr?'pdf-warn':''}">
+      <td>${e.id}</td>
+      <td class="pdf-name">${e.name}</td>
+      <td>${e.loc}</td>
+      <td>${e.jobTitle || "—"}</td>
+      <td>${money(e.base)} ${e.cur}</td>
+      <td>${e.commission>0?money(e.commission):"—"}</td>
+      <td>${e.absenceDays>0?e.absenceDays:"—"}</td>
+      <td>${e.advThisMonth>0?money(e.advThisMonth):"—"}</td>
+      <td>${gosi>0?money(gosi):"—"}</td>
+      <td class="pdf-net">${money(net)} ${e.cur}</td>
+      <td>${e.cur==="ريال"?"—":(sar!==null?money(sar)+" ريال":"—")}</td>
+      <td>${e.channel || "—"}</td>
+    </tr>`).join("");
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("ar-SA", {year:"numeric", month:"long", day:"numeric"});
+
+  const printHtml = `
+  <div class="pdf-page">
+    <div class="pdf-header">
+      <div>
+        <img src="data:image/png;base64,${LOGO_B64}" alt="ترافليون" style="height:38px;display:block;margin-bottom:6px">
+        <div class="pdf-sub">مسير الرواتب — فترة ${cp().label}</div>
+      </div>
+      <div class="pdf-meta">
+        <div>تاريخ الإصدار: ${dateStr}</div>
+        <div>عدد الموظفين: ${rows.length}</div>
+        <div>الدور: ${roleObj().label || currentRole}</div>
+      </div>
+    </div>
+
+    <table class="pdf-table">
+      <thead>
+        <tr>
+          <th>الرقم الوظيفي</th><th>الاسم</th><th>الموقع</th><th>المسمى الوظيفي</th>
+          <th>الأساسي</th><th>عمولات</th><th>غياب (يوم)</th><th>قسط سلفة</th>
+          <th>تأمينات</th><th>الصافي</th><th>المقابل بالريال</th><th>قناة الصرف</th>
+        </tr>
+      </thead>
+      <tbody>${trs}</tbody>
+    </table>
+
+    <div class="pdf-summary">
+      <div><span>إجمالي الصافي بالريال (تقريبي)</span><strong>${money(sarTotal)}${sarUnknown?" (+ بنود بانتظار سعر الصرف)":""} ريال</strong></div>
+      <div><span>سجلات تحتاج معالجة</span><strong>${errCount}</strong></div>
+      <div><span>نسبة التأمينات المطبَّقة</span><strong>${gosiRate?gosiRate+"%":"غير محددة"}</strong></div>
+    </div>
+
+    <div class="pdf-sign">
+      <div><span>أُعِدَّ بواسطة</span><div class="pdf-line"></div></div>
+      <div><span>راجعه</span><div class="pdf-line"></div></div>
+      <div><span>اعتمده</span><div class="pdf-line"></div></div>
+    </div>
+
+    <div class="pdf-footer">مستند مُنشأ آليًا من نموذج تطبيقي — ترافليون · ${cp().label} · صفحة <span class="pageNumber"></span></div>
+  </div>`;
+
+  const container = document.createElement("div");
+  container.id = "pdf-print-area";
+  container.innerHTML = printHtml;
+  document.body.appendChild(container);
+  document.body.classList.add("printing-pdf");
+  setTimeout(() => {
+    window.print();
+    document.body.classList.remove("printing-pdf");
+    container.remove();
+  }, 150);
+};
+
+document.getElementById("reset-btn").onclick = () => {
+  if (!confirm('سيتم استرجاع كل قيم فترة "'+cp().label+'" لأصلها وحذف سجل تعديلاتها. متابعة؟')) return;
+  const p = cp();
+  p.employees = JSON.parse(JSON.stringify(p._original));
+  p.editLog = [];
+  render();
+  toast("تم استرجاع القيم الأصلية");
+};
+
+document.getElementById("new-period-btn").onclick = () => {
+  const input = prompt("أدخل الفترة الجديدة بصيغة سنة-شهر، مثال: 2026-08 (يمكنك كتابة 8 بدل 08)");
+  if (input === null) return;
+  const m1 = input.trim().match(/^(\d{4})-(\d{1,2})$/);
+  if (!m1) { alert("صيغة غير صحيحة. استخدم مثال: 2026-08"); return; }
+  const year = m1[1];
+  const monthNum = parseInt(m1[2], 10);
+  if (monthNum < 1 || monthNum > 12) { alert("رقم الشهر يجب أن يكون بين 1 و12."); return; }
+  const key = year + "-" + String(monthNum).padStart(2, "0");
+  if (PERIODS[key]) { alert('هذه الفترة ("' + PERIODS[key].label + '") موجودة بالفعل — اخترها من القائمة المنسدلة بدل إنشائها من جديد.'); return; }
+  const monthNames = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+  const label = monthNames[monthNum-1] + " " + year;
+  const copyPrev = confirm('هل تريد نسخ قائمة الموظفين من فترة "'+cp().label+'" كنقطة بداية (مع تصفير التحويل الإضافي وقسط السلفة والعمولة وأيام الغياب وتأكيد الاستلام — فكلها بنود خاصة بكل شهر على حدة)؟\nموافق = نسخ القائمة. إلغاء = تبدأ الفترة فارغة (يمكنك إضافة الموظفين يدويًا من تبويب "الموظفون").');
+  let employees;
+  if (copyPrev){
+    employees = cp().employees.map(e => {
+      const ne = {...e, bank:0, advThisMonth:0, commission:0, absenceDays:0, receivedConfirmed:false, receivedAmount:null, receivedAt:null};
+      recompute(ne);
+      return ne;
+    });
+  } else {
+    employees = [];
+  }
+  PERIODS[key] = { label, employees, editLog: [], rates: {"جنيه مصري":null,"MYR":null,"دولار":null}, gosiRate: null, savedSnapshot: null };
+  PERIODS[key]._original = JSON.parse(JSON.stringify(employees));
+  PERIODS[key].savedSnapshot = periodSnapshotStr(PERIODS[key]);
+  currentKey = key; sortKey=null; empFilter=""; payrollFilter="";
+  render();
+  toast('تم إنشاء فترة "'+label+'"');
+};
+
+document.getElementById("save-period-btn").onclick = async () => {
+  const p = cp();
+  if (SERVER_ENABLED && cloudSession){
+    await saveCurrentPeriodToCloud();
+    render();
+    return;
+  }
+  const payload = { periodKey: currentKey, label: p.label, employees: p.employees, editLog: p.editLog, rates: p.rates, gosiRate: p.gosiRate };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = "فترة_"+currentKey+"_"+p.label.replace(" ","_")+".json"; a.click();
+  URL.revokeObjectURL(url);
+  p.savedSnapshot = periodSnapshotStr(p);
+  render();
+  toast('تم حفظ فترة "'+p.label+'" كملف — استوردها لاحقًا لاسترجاعها كما هي');
+};
+
+document.getElementById("load-period-btn").onclick = () => document.getElementById("load-period-file").click();
+document.getElementById("load-period-file").onchange = (ev) => {
+  const file = ev.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data.periodKey || !data.employees) throw new Error("bad file");
+      PERIODS[data.periodKey] = { label: data.label || data.periodKey, employees: data.employees, editLog: data.editLog||[], rates: data.rates||{"جنيه مصري":null,"MYR":null,"دولار":null}, gosiRate: data.gosiRate||null };
+      PERIODS[data.periodKey]._original = JSON.parse(JSON.stringify(data.employees));
+      PERIODS[data.periodKey].savedSnapshot = periodSnapshotStr(PERIODS[data.periodKey]);
+      currentKey = data.periodKey; sortKey=null; empFilter=""; payrollFilter="";
+      render();
+      toast('تم استيراد فترة "'+PERIODS[data.periodKey].label+'"');
+    } catch(err){ alert("تعذّرت قراءة الملف — تأكد أنه ملف فترة محفوظ من هذه الصفحة."); }
+  };
+  reader.readAsText(file);
+  ev.target.value = "";
+};
+
+document.getElementById("delete-period-btn").onclick = () => {
+  const keys = Object.keys(PERIODS);
+  if (keys.length <= 1) return;
+  if (!confirm('حذف فترة "'+cp().label+'" نهائيًا من هذه الجلسة؟ صدّرها أولًا إن أردت الاحتفاظ بها.')) return;
+  delete PERIODS[currentKey];
+  currentKey = Object.keys(PERIODS).sort()[0];
+  render();
+  toast("تم حذف الفترة");
+};
+
+// ============ قائمة "الإجراءات" المنسدلة ============
+document.getElementById("actions-menu-btn").onclick = (e) => {
+  e.stopPropagation();
+  document.getElementById("actions-menu").classList.toggle("open");
+};
+document.getElementById("actions-menu").addEventListener("click", (e) => {
+  if (e.target.closest("button")) document.getElementById("actions-menu").classList.remove("open");
+});
+document.addEventListener("click", () => {
+  document.getElementById("actions-menu").classList.remove("open");
+});
+
+// ملاحظة: لم يعد هناك تحذير قبل إغلاق الصفحة — البيانات تُحفظ تلقائيًا محليًا عبر IndexedDB فور كل تعديل.
+
+// mark original for edit-diff badges (deep snapshot per period at creation time)
+PERIODS["2026-07"]._original = JSON.parse(JSON.stringify(PERIODS["2026-07"].employees));
+PERIODS["2026-07"]._sourceRaw = RAW;
+PERIODS["2026-07"].savedSnapshot = periodSnapshotStr(PERIODS["2026-07"]); // treat initial load as "saved" baseline is false actually; keep unsaved off at start
+
+// ============ حفظ تلقائي محلي عبر IndexedDB (أوفلاين بالكامل، بلا خادم) ============
+const IDB_NAME = "TraveliunPayrollDB";
+const IDB_STORE = "appState";
+let idbHandle = null;
+let idbSaveTimer = null;
+let idbLastSaveOk = null; // null = لم يُحاول بعد، true/false = نتيجة آخر محاولة
+
+function openIDB(){
+  return new Promise((resolve) => {
+    if (!window.indexedDB){ resolve(null); return; }
+    let req;
+    try { req = indexedDB.open(IDB_NAME, 1); } catch(e){ resolve(null); return; }
+    req.onupgradeneeded = () => { req.result.createObjectStore(IDB_STORE); };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => resolve(null);
+  });
+}
+
+async function loadStateFromIDB(){
+  try {
+    idbHandle = await openIDB();
+    if (!idbHandle) return null;
+    return await new Promise((resolve) => {
+      const tx = idbHandle.transaction(IDB_STORE, "readonly");
+      const req = tx.objectStore(IDB_STORE).get("state");
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    });
+  } catch(e){ return null; }
+}
+
+function saveStateToIDBNow(){
+  if (!idbHandle) { idbLastSaveOk = false; updateIdbIndicator(); return; }
+  try {
+    const payload = { periods: PERIODS, users: USERS, savedAt: new Date().toISOString() };
+    const tx = idbHandle.transaction(IDB_STORE, "readwrite");
+    tx.objectStore(IDB_STORE).put(payload, "state");
+    tx.oncomplete = () => { idbLastSaveOk = true; updateIdbIndicator(); };
+    tx.onerror = () => { idbLastSaveOk = false; updateIdbIndicator(); };
+  } catch(e){ idbLastSaveOk = false; updateIdbIndicator(); }
+}
+
+function scheduleIdbSave(){
+  clearTimeout(idbSaveTimer);
+  idbSaveTimer = setTimeout(saveStateToIDBNow, 400); // تجميع التعديلات المتتالية السريعة بحفظ واحد
+}
+
+function updateIdbIndicator(){
+  const el = document.getElementById("idb-indicator");
+  if (!el) return;
+  if (idbLastSaveOk === true) el.innerHTML = '<span style="color:#34D399">💾 محفوظ تلقائيًا على هذا الجهاز</span>';
+  else if (idbLastSaveOk === false) el.innerHTML = '<span style="color:#D97706">⚠ تعذّر الحفظ التلقائي المحلي — استخدم تصدير JSON كبديل</span>';
+}
+
+// نحمّل أي حالة محفوظة سابقًا قبل تفعيل شاشة الدخول — بلا حجب أو تأخير محسوس
+const idbLoadPromise = loadStateFromIDB().then(saved => {
+  if (saved && saved.periods && Object.keys(saved.periods).length){
+    PERIODS = saved.periods;
+    if (saved.users && saved.users.length) USERS = saved.users;
+    if (!PERIODS[currentKey]) currentKey = Object.keys(PERIODS).sort()[0];
+  }
+  return saved;
+});
+
+// ============ منطق حالة الخادم (Supabase) ============
+const statusEl = document.getElementById("server-status");
+if (SERVER_ENABLED){
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  statusEl.className = "on";
+  statusEl.textContent = "🟢 متصل بخادم سحابي — تسجيل الدخول والحفظ حقيقيان";
+  document.getElementById("cloud-login-block").style.display = "block";
+  document.getElementById("local-login-block").style.display = "none";
+} else {
+  statusEl.className = "off";
+  statusEl.textContent = "🟡 لا يوجد خادم مُهيَّأ بعد — الوضع المحلي التجريبي فقط (انظر التعليمات المرفقة لتفعيل خادم مجاني حقيقي)";
+  document.getElementById("cloud-login-block").style.display = "none";
+  document.getElementById("local-login-block").style.display = "block";
+}
+
+async function loadPeriodsFromCloud(){
+  const {data, error} = await supabase.from("payroll_periods").select("*");
+  if (error){ console.error(error); return false; }
+  if (data && data.length){
+    Object.keys(PERIODS).forEach(k => delete PERIODS[k]);
+    data.forEach(row => {
+      PERIODS[row.period_key] = {
+        label: row.label, employees: row.employees || [], editLog: row.edit_log || [],
+        rates: row.rates || {"جنيه مصري":null,"MYR":null,"دولار":null}, gosiRate: row.gosi_rate || null,
+      };
+      PERIODS[row.period_key]._original = JSON.parse(JSON.stringify(PERIODS[row.period_key].employees));
+      PERIODS[row.period_key].savedSnapshot = periodSnapshotStr(PERIODS[row.period_key]);
+    });
+    currentKey = Object.keys(PERIODS).sort()[0];
+  }
+  return true;
+}
+
+async function saveCurrentPeriodToCloud(){
+  if (!SERVER_ENABLED) return false;
+  const p = cp();
+  const {error} = await supabase.from("payroll_periods").upsert({
+    period_key: currentKey, label: p.label, employees: p.employees,
+    edit_log: p.editLog, rates: p.rates, gosi_rate: p.gosiRate, updated_at: new Date().toISOString(),
+  });
+  if (error){ toast("فشل الحفظ السحابي: " + error.message); console.error(error); return false; }
+  p.savedSnapshot = periodSnapshotStr(p);
+  toast("تم الحفظ على الخادم السحابي ✓");
+  return true;
+}
+
+document.getElementById("cloud-login-btn").onclick = async () => {
+  const email = document.getElementById("cloud-email").value.trim();
+  const password = document.getElementById("cloud-password").value;
+  const err = document.getElementById("cloud-login-error");
+  err.textContent = "";
+  if (!email || !password){ err.textContent = "أدخل البريد الإلكتروني وكلمة المرور."; return; }
+  const {data, error} = await supabase.auth.signInWithPassword({email, password});
+  if (error){ err.textContent = "فشل تسجيل الدخول: " + error.message; return; }
+  cloudSession = data.session;
+  const {data: roleRow, error: roleErr} = await supabase.from("user_roles").select("role, employee_id").eq("user_id", data.user.id).single();
+  if (roleErr || !roleRow){ err.textContent = "تم الدخول لكن لا يوجد دور مُعيَّن لك في قاعدة البيانات — راجع المدير المالي/تقني النظام لإضافتك في جدول user_roles."; await supabase.auth.signOut(); return; }
+  if (!ROLES[roleRow.role]){ err.textContent = "الدور المسجَّل غير معروف للنظام: " + roleRow.role; return; }
+  currentRole = roleRow.role;
+  loggedInEmployeeId = roleRow.employee_id || null;
+  await loadPeriodsFromCloud();
+  activeTab = ROLES[currentRole].tabs[0];
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("app-shell").style.display = "block";
+  document.getElementById("role-badge").innerHTML = `<span class="name">☁️ ${email}</span><span class="role">${ROLES[currentRole].label}</span>`;
+  render();
+};
+
+// ============ منطق شاشة الدخول المحلي (تجريبي) — حسابات فردية ============
+let loggedInEmployeeId = null;
+
+function findUserEmployeeId(user){
+  if (user.role !== "employee" || !user.employeeName) return null;
+  const emp = PERIODS["2026-07"].employees.find(e => e.name === user.employeeName);
+  return emp ? emp.id : null;
+}
+
+document.getElementById("login-btn").onclick = async () => {
+  const username = document.getElementById("login-username").value.trim();
+  const pass = document.getElementById("login-password").value;
+  const err = document.getElementById("login-error");
+  await idbLoadPromise; // التأكد من تحميل أي حالة محفوظة محليًا قبل المتابعة
+  const user = USERS.find(u => u.username === username);
+  if (!user || user.password !== pass){ err.textContent = "اسم المستخدم أو كلمة المرور غير صحيحة."; return; }
+  const role = ROLES[user.role];
+  currentUser = user;
+  currentRole = user.role;
+  activeTab = role.tabs[0];
+  loggedInEmployeeId = findUserEmployeeId(user);
+  if (user.role === "employee" && !loggedInEmployeeId){
+    err.textContent = "تعذّر ربط حسابك بسجل موظف في الفترة الحالية.";
+    currentUser = null; currentRole = null; return;
+  }
+  err.textContent = "";
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("app-shell").style.display = "block";
+  const badge = document.getElementById("role-badge");
+  badge.innerHTML = `<span class="name">${user.name}</span><span class="role">${role.label}</span>`;
+  render();
+};
+document.getElementById("login-username").addEventListener("keydown", (ev) => {
+  if (ev.key === "Enter") document.getElementById("login-password").focus();
+});
+document.getElementById("login-password").addEventListener("keydown", (ev) => {
+  if (ev.key === "Enter") document.getElementById("login-btn").click();
+});
+document.getElementById("logout-btn").onclick = async () => {
+  // لا داعي لتحذير فقدان البيانات هنا — الحفظ التلقائي المحلي يحفظها قبل تسجيل الخروج
+  if (SERVER_ENABLED && cloudSession) await supabase.auth.signOut();
+  currentRole = null; currentUser = null; loggedInEmployeeId = null; cloudSession = null;
+  document.getElementById("login-username").value = "";
+  document.getElementById("login-password").value = "";
+  document.getElementById("app-shell").style.display = "none";
+  document.getElementById("login-screen").style.display = "flex";
+};
+</script>
+</body>
+</html>
